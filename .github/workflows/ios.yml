@@ -24,6 +24,23 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Select the newest installed stable Xcode
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, os, re
+          versions = []
+          for path in glob.glob("/Applications/Xcode_*.app"):
+              match = re.search(r"Xcode_(\d+(?:\.\d+)*)\.app$", path)
+              if match:
+                  versions.append((tuple(map(int, match[1].split("."))), path))
+          if not versions:
+              raise SystemExit("No stable Xcode installation found")
+          path = max(versions)[1] + "/Contents/Developer"
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              output.write("DEVELOPER_DIR=" + path + "\n")
+          print("Selected", path)
+          PY
       - name: Validate project and property lists
         shell: bash
         run: |
@@ -41,7 +58,9 @@ jobs:
           python3 - <<'PY'
           import json, os, re, subprocess
           devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "--json"]))["devices"]
-          runtimes = sorted((key for key in devices if ".iOS-" in key), key=lambda key: tuple(map(int, re.findall(r"\d+", key))), reverse=True)
+          sdk = tuple(map(int, subprocess.check_output(["xcrun", "--sdk", "iphonesimulator", "--show-sdk-version"], text=True).strip().split(".")))
+          versions = lambda key: tuple(map(int, re.findall(r"\d+", key)))
+          runtimes = sorted((key for key in devices if ".iOS-" in key and versions(key) <= sdk), key=versions, reverse=True)
           for runtime in runtimes:
               phones = [device for device in devices[runtime] if device["name"].startswith("iPhone")]
               tablets = [device for device in devices[runtime] if device["name"].startswith("iPad")]
