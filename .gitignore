@@ -23,6 +23,7 @@ artifacts/*.sha256
 ios/.build/
 ios/DerivedData/
 ios/TestResults.xcresult/
+ios/TestResults*.xcresult/
 ios/build/
 **/xcuserdata/
 *.xcuserstate

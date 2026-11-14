@@ -22,13 +22,13 @@ concurrency:
 
 jobs:
   verify-ios:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Select the newest installed stable Xcode
+      - name: Select Xcode 26.2
         shell: bash
         run: |
           python3 - <<'PY'
@@ -40,6 +40,9 @@ jobs:
                   versions.append((tuple(map(int, match[1].split("."))), path))
           if not versions:
               raise SystemExit("No stable Xcode installation found")
+          versions = [version for version in versions if version[0][:2] == (26, 2)]
+          if not versions:
+              raise SystemExit("Xcode 26.2 is not installed; update the pinned toolchain deliberately")
           path = max(versions)[1] + "/Contents/Developer"
           with open(os.environ["GITHUB_ENV"], "a") as output:
               output.write("DEVELOPER_DIR=" + path + "\n")
@@ -70,6 +73,22 @@ jobs:
             -configuration Release -destination 'generic/platform=iOS' \
             -archivePath ios/build/ThriftForGood-unsigned.xcarchive \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee ios/build/device-build.log
+      - name: Package build artifacts
+        shell: bash
+        run: |
+          if [ -d ios/build/Simulator/ThriftForGood.app ]; then
+            ditto -c -k --keepParent ios/build/Simulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
+          fi
+          if [ -d ios/build/ThriftForGood-unsigned.xcarchive ]; then
+            ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
+          fi
+      - name: Publish compiled iOS builds
+        uses: actions/upload-artifact@v7
+        with:
+          name: ThriftForGood-iOS-builds
+          retention-days: 14
+          if-no-files-found: error
+          path: ios/build/*.zip
       - name: Select available iPhone and iPad simulators
         id: simulators
         shell: bash
@@ -92,40 +111,58 @@ jobs:
           else:
               raise SystemExit("No runtime has both an iPhone and iPad simulator")
           PY
-      - name: Build and test on iPhone and iPad
+      - name: Build and test on iPhone
+        timeout-minutes: 12
         env:
           PHONE: ${{ steps.simulators.outputs.phone }}
-          TABLET: ${{ steps.simulators.outputs.tablet }}
         shell: bash
         run: |
           mkdir -p ios/build
+          xcrun simctl bootstatus "$PHONE" -b
           xcodebuild test \
             -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
             -configuration Debug -derivedDataPath ios/DerivedData \
             -destination "platform=iOS Simulator,id=$PHONE" \
+            -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 60 \
+            -maximum-test-execution-time-allowance 120 \
+            -resultBundlePath ios/TestResults-iPhone.xcresult \
+            CODE_SIGN_IDENTITY=- 2>&1 | tee ios/build/iphone-tests.log
+      - name: Shut down iPhone simulator
+        if: always()
+        env:
+          PHONE: ${{ steps.simulators.outputs.phone }}
+        run: if [ -n "$PHONE" ]; then xcrun simctl shutdown "$PHONE" || true; fi
+      - name: Build and test on iPad
+        timeout-minutes: 12
+        env:
+          TABLET: ${{ steps.simulators.outputs.tablet }}
+        shell: bash
+        run: |
+          xcrun simctl bootstatus "$TABLET" -b
+          xcodebuild test \
+            -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
+            -configuration Debug -derivedDataPath ios/DerivedData \
             -destination "platform=iOS Simulator,id=$TABLET" \
             -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
             -test-timeouts-enabled YES -default-test-execution-time-allowance 60 \
             -maximum-test-execution-time-allowance 120 \
-            -resultBundlePath ios/TestResults.xcresult \
-            CODE_SIGN_IDENTITY=- 2>&1 | tee ios/build/simulator-tests.log
-      - name: Package build artifacts
+            -resultBundlePath ios/TestResults-iPad.xcresult \
+            CODE_SIGN_IDENTITY=- 2>&1 | tee ios/build/ipad-tests.log
+      - name: Shut down iPad simulator
         if: always()
-        shell: bash
-        run: |
-          if [ -d ios/build/Simulator/ThriftForGood.app ]; then
-            ditto -c -k --keepParent ios/build/Simulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
-          fi
-          if [ -d ios/build/ThriftForGood-unsigned.xcarchive ]; then
-            ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
-          fi
+        env:
+          TABLET: ${{ steps.simulators.outputs.tablet }}
+        run: if [ -n "$TABLET" ]; then xcrun simctl shutdown "$TABLET" || true; fi
       - name: Export simulator screenshots
         if: always()
         shell: bash
         run: |
-          if [ -d ios/TestResults.xcresult ]; then
-            xcrun xcresulttool export attachments --path ios/TestResults.xcresult --output-path ios/build/screenshots
-          fi
+          for device in iPhone iPad; do
+            if [ -d "ios/TestResults-$device.xcresult" ]; then
+              xcrun xcresulttool export attachments --path "ios/TestResults-$device.xcresult" --output-path "ios/build/screenshots/$device"
+            fi
+          done
       - name: Collect Xcode crash diagnostics
         if: failure()
         shell: bash
@@ -153,4 +190,4 @@ jobs:
             ios/build/*.zip
             ios/build/*.ips
             ios/build/screenshots
-            ios/TestResults.xcresult
+            ios/TestResults*.xcresult
