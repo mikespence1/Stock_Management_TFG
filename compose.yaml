@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: givingflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
+      POSTGRES_DB: givingflow
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U givingflow"]
+      interval: 3s
+      retries: 20
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://givingflow:${POSTGRES_PASSWORD}@db:5432/givingflow
+      STAFF_EMAIL: ${STAFF_EMAIL:-staff@givingflow.local}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:?Set STAFF_PASSWORD in .env}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes: ["uploads:/app/backend/uploads"]
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
+  uploads:

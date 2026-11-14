@@ -1,0 +1,10 @@
+fastapi==0.162.7
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.0.57
+psycopg[binary]==3.3.9
+pydantic[email]==2.14.3
+python-multipart==0.0.33
+qrcode==8.2
+pillow==12.3.0
+httpx==0.28.1
+pytest==9.2.0
