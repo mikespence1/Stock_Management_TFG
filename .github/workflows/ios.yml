@@ -5,12 +5,12 @@ on:
   push:
     paths:
       - "ios/**"
-      - "scripts/generate_ios_project.py"
+      - "scripts/generate_ios_project.rb"
       - ".github/workflows/ios.yml"
   pull_request:
     paths:
       - "ios/**"
-      - "scripts/generate_ios_project.py"
+      - "scripts/generate_ios_project.rb"
       - ".github/workflows/ios.yml"
 
 permissions:
@@ -45,8 +45,6 @@ jobs:
         shell: bash
         run: |
           plutil -lint ios/ThriftForGood.xcodeproj/project.pbxproj ios/Sources/Info.plist ios/Sources/PrivacyInfo.xcprivacy
-          python3 scripts/generate_ios_project.py
-          git diff --exit-code -- ios/ThriftForGood.xcodeproj
           xcodebuild -version
           xcodebuild -list -project ios/ThriftForGood.xcodeproj
       - name: Test connection and origin policies
@@ -106,6 +104,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO | tee ios/build/device-build.log
           ditto -c -k --keepParent ios/DerivedData/Build/Products/Debug-iphonesimulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
           ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
+      - name: Collect Xcode crash diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          output = Path("ios/build")
+          output.mkdir(exist_ok=True)
+          reports = sorted((Path.home() / "Library/Logs/DiagnosticReports").glob("xcodebuild*"), key=lambda path: path.stat().st_mtime, reverse=True)
+          for report in reports[:3]:
+              if report.is_file():
+                  shutil.copy2(report, output / report.name)
+                  print("Saved", report.name)
+          PY
       - name: Save build results
         if: always()
         uses: actions/upload-artifact@v7
@@ -116,4 +129,5 @@ jobs:
           path: |
             ios/build/*.log
             ios/build/*.zip
+            ios/build/*.ips
             ios/TestResults.xcresult

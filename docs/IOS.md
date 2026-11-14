@@ -124,6 +124,6 @@ Shared interface checks, from frontend/:
 
 After shared frontend changes, rebuild the PC image with docker compose up -d --build app. Native iOS changes require a new signed app build.
 
-The committed Xcode project needs no third-party generator. If source membership changes, regenerate with python3 scripts/generate_ios_project.py. The generator uses Python's standard library and does not manage signing.
+Opening the committed Xcode project requires no third-party generator. If source membership changes, install the xcodeproj Ruby gem (version 1.28.1) and run ruby scripts/generate_ios_project.rb. Windows developers can use ios/project-tools.Dockerfile to run that generator. It does not manage signing.
 
 References: [Apple distribution](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases), [preparing distribution](https://developer.apple.com/documentation/xcode/preparing-your-app-for-distribution), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/), [registered devices](https://developer.apple.com/help/account/devices/devices-overview/), [membership fee waiver](https://developer.apple.com/support/membership-fee-waiver/), [local-network ATS exceptions](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
