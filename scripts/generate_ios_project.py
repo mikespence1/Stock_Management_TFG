@@ -149,6 +149,14 @@ for name in ["ThriftForGoodTests", "ThriftForGoodUITests"]:
     buildable(ET.SubElement(testables, "TestableReference", skipped="NO"), name, "xctest")
 for action, config in [("LaunchAction", "Debug"), ("ProfileAction", "Release")]:
     node = ET.SubElement(scheme, action, buildConfiguration=config, shouldUseLaunchSchemeArgsEnv="YES")
+    if action == "LaunchAction":
+        node.attrib.update(selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB",
+                           selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB",
+                           launchStyle="0", useCustomWorkingDirectory="NO",
+                           ignoresPersistentStateOnLaunch="NO", debugDocumentVersioning="YES",
+                           debugServiceExtension="internal", allowLocationSimulation="YES")
+    else:
+        node.attrib.update(savedToolIdentifier="", useCustomWorkingDirectory="NO", debugDocumentVersioning="YES")
     buildable(ET.SubElement(node, "BuildableProductRunnable", runnableDebuggingMode="0"), "ThriftForGood", "app")
 ET.SubElement(scheme, "AnalyzeAction", buildConfiguration="Debug")
 ET.SubElement(scheme, "ArchiveAction", buildConfiguration="Release", revealArchiveInOrganizer="YES")

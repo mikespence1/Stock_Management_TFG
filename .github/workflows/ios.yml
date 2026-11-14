@@ -51,6 +51,15 @@ jobs:
           xcodebuild -list -project ios/ThriftForGood.xcodeproj
       - name: Test connection and origin policies
         run: swift test --package-path ios
+      - name: Compile native app for simulator
+        shell: bash
+        run: |
+          mkdir -p ios/build
+          xcodebuild build \
+            -project ios/ThriftForGood.xcodeproj -target ThriftForGood \
+            -configuration Debug -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO CONFIGURATION_BUILD_DIR="$PWD/ios/build/Simulator" \
+            2>&1 | tee ios/build/native-compile.log
       - name: Select available iPhone and iPad simulators
         id: simulators
         shell: bash
