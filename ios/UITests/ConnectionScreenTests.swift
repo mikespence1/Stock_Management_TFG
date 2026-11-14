@@ -8,6 +8,10 @@ final class ConnectionScreenTests: XCTestCase {
         let address = app.textFields["serverAddress"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["connectServer"].exists)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "PC connection screen"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
         address.tap()
         if let value = address.value as? String, !value.isEmpty {
             address.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))

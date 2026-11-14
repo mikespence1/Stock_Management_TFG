@@ -3,6 +3,7 @@ type NativeBridge = {
   takePhoto: (requestId: string) => void;
   scanQr: (requestId: string) => void;
   printLabels: (ids: string) => void;
+  shareFile?: (filename: string, contents: string) => void;
 };
 
 declare global {
@@ -51,5 +52,12 @@ export function printNativeLabels(ids: string[]): boolean {
   const native = bridge();
   if (!native) return false;
   native.printLabels(ids.join(','));
+  return true;
+}
+
+export function shareNativeFile(filename: string, contents: string): boolean {
+  const native = bridge();
+  if (!native?.shareFile) return false;
+  native.shareFile(filename, contents);
   return true;
 }

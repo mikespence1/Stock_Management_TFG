@@ -234,7 +234,8 @@ final class WorkspaceViewController: UIViewController, WKNavigationDelegate, WKU
           Object.defineProperty(window, 'GivingFlowIOS', {value: Object.freeze({
             takePhoto: function(id) { window.webkit.messageHandlers.givingflow.postMessage({operation:'photo',requestId:id}); },
             scanQr: function(id) { window.webkit.messageHandlers.givingflow.postMessage({operation:'qr',requestId:id}); },
-            printLabels: function(ids) { window.webkit.messageHandlers.givingflow.postMessage({operation:'print',ids:ids}); }
+            printLabels: function(ids) { window.webkit.messageHandlers.givingflow.postMessage({operation:'print',ids:ids}); },
+            shareFile: function(name,contents) { window.webkit.messageHandlers.givingflow.postMessage({operation:'share',filename:name,contents:contents}); }
           })});
         }
         """
@@ -267,6 +268,11 @@ final class WorkspaceViewController: UIViewController, WKNavigationDelegate, WKU
               isTrusted(message.frameInfo.request.url), isTrusted(web?.url),
               let body = message.body as? [String: String], let operation = body["operation"]
         else { return }
+        if operation == "share" {
+            guard pending == nil, printWeb == nil, presentedViewController == nil else { return }
+            shareFile(filename: body["filename"] ?? "", contents: body["contents"] ?? "")
+            return
+        }
         if operation == "print" {
             guard pending == nil else { showAlert("Finish the camera action first."); return }
             printLabels(body["ids"] ?? "")
@@ -369,6 +375,34 @@ final class WorkspaceViewController: UIViewController, WKNavigationDelegate, WKU
         present(scanner, animated: true)
     }
 
+    private func shareFile(filename: String, contents: String) {
+        guard filename.range(of: "^[A-Za-z0-9][A-Za-z0-9._-]{0,159}\\.json$", options: .regularExpression) != nil,
+              let data = contents.data(using: .utf8), data.count <= 1048576,
+              (try? JSONSerialization.jsonObject(with: data)) != nil else {
+            showAlert("The JSON export could not be prepared.")
+            return
+        }
+        do {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let url = directory.appendingPathComponent(filename)
+            try data.write(to: url, options: .atomic)
+            presentShare(url)
+        } catch { showAlert(error.localizedDescription) }
+    }
+
+    private func presentShare(_ url: URL) {
+        guard presentedViewController == nil else {
+            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            return
+        }
+        let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        share.popoverPresentationController?.sourceView = serverButton
+        share.popoverPresentationController?.sourceRect = serverButton.bounds
+        share.completionWithItemsHandler = { _, _, _, _ in try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        present(share, animated: true)
+    }
+
     private func printLabels(_ ids: String) {
         guard let server = server, printWeb == nil else { return }
         do {
@@ -465,11 +499,7 @@ final class WorkspaceViewController: UIViewController, WKNavigationDelegate, WKU
                 self.downloads.removeValue(forKey: key)
                 switch result {
                 case .success(let url):
-                    let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                    share.popoverPresentationController?.sourceView = self.serverButton
-                    share.popoverPresentationController?.sourceRect = self.serverButton.bounds
-                    share.completionWithItemsHandler = { _, _, _, _ in try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
-                    self.present(share, animated: true)
+                    self.presentShare(url)
                 case .failure(let error): self.showAlert(error.localizedDescription)
                 }
             }

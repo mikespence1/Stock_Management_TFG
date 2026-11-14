@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-ios:
     runs-on: macos-15
@@ -56,8 +60,16 @@ jobs:
           xcodebuild build \
             -project ios/ThriftForGood.xcodeproj -target ThriftForGood \
             -configuration Debug -sdk iphonesimulator \
-            CODE_SIGNING_ALLOWED=NO CONFIGURATION_BUILD_DIR="$PWD/ios/build/Simulator" \
+            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CONFIGURATION_BUILD_DIR="$PWD/ios/build/Simulator" \
             2>&1 | tee ios/build/native-compile.log
+      - name: Verify device archive without signing
+        shell: bash
+        run: |
+          xcodebuild archive \
+            -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath ios/build/ThriftForGood-unsigned.xcarchive \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee ios/build/device-build.log
       - name: Select available iPhone and iPad simulators
         id: simulators
         shell: bash
@@ -92,18 +104,28 @@ jobs:
             -configuration Debug -derivedDataPath ios/DerivedData \
             -destination "platform=iOS Simulator,id=$PHONE" \
             -destination "platform=iOS Simulator,id=$TABLET" \
+            -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 60 \
+            -maximum-test-execution-time-allowance 120 \
             -resultBundlePath ios/TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO | tee ios/build/simulator-tests.log
-      - name: Verify device archive without signing
+            CODE_SIGN_IDENTITY=- 2>&1 | tee ios/build/simulator-tests.log
+      - name: Package build artifacts
+        if: always()
         shell: bash
         run: |
-          xcodebuild archive \
-            -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
-            -configuration Release -destination 'generic/platform=iOS' \
-            -archivePath ios/build/ThriftForGood-unsigned.xcarchive \
-            CODE_SIGNING_ALLOWED=NO | tee ios/build/device-build.log
-          ditto -c -k --keepParent ios/DerivedData/Build/Products/Debug-iphonesimulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
-          ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
+          if [ -d ios/build/Simulator/ThriftForGood.app ]; then
+            ditto -c -k --keepParent ios/build/Simulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
+          fi
+          if [ -d ios/build/ThriftForGood-unsigned.xcarchive ]; then
+            ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
+          fi
+      - name: Export simulator screenshots
+        if: always()
+        shell: bash
+        run: |
+          if [ -d ios/TestResults.xcresult ]; then
+            xcrun xcresulttool export attachments --path ios/TestResults.xcresult --output-path ios/build/screenshots
+          fi
       - name: Collect Xcode crash diagnostics
         if: failure()
         shell: bash
@@ -130,4 +152,5 @@ jobs:
             ios/build/*.log
             ios/build/*.zip
             ios/build/*.ips
+            ios/build/screenshots
             ios/TestResults.xcresult
