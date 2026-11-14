@@ -22,7 +22,7 @@ An Android APK cannot be installed on iOS. A source ZIP or unsigned build is als
 
 | Situation | Installation path |
 | --- | --- |
-| Mac with Xcode and an iPhone/iPad | Run directly from Xcode using your signing team. A Personal Team supports limited development testing; follow Xcode's provisioning requirements. |
+| Mac with Xcode and an iPhone/iPad | An ordinary Apple Account enables a free Personal Team for limited testing. Its device provisioning expires after 7 days and needs rebuilding/reinstalling; this is not staff distribution. |
 | Staff beta testing | Apple Developer Program membership, signed upload to App Store Connect and TestFlight invitations. Builds expire after 90 days; external testing may require Beta App Review. |
 | Limited set of known devices | Register devices in your developer account and export an Ad Hoc signed build for them. |
 | Ongoing organisation deployment | Discuss Custom Apps through Apple Business Manager/MDM with your Apple administrator. |
@@ -31,7 +31,7 @@ A paid Developer Program membership is normally needed for TestFlight and Ad Hoc
 
 ## Install using a Mac and Xcode
 
-1. Copy/clone this project onto a Mac with current Xcode.
+1. Copy/clone the **ios-native-app** branch onto a Mac with current Xcode. Until this work is merged, the repository's main branch does not contain the iOS project. On GitHub, select that branch before using **Code -> Download ZIP**.
 2. Open ios/ThriftForGood.xcodeproj and select the **ThriftForGood** scheme.
 3. Select the application target, then **Signing & Capabilities**.
 4. Choose your Apple development **Team** and automatic signing. Replace org.givingflow.mobile with your organisation's registered identifier if needed.
@@ -88,7 +88,7 @@ The workflow .github/workflows/ios.yml uses a GitHub-hosted macOS runner:
 2. Open **Actions -> iOS build and tests**.
 3. Open the run triggered by the push. When offered, **Run workflow** can run it manually on a branch containing the workflow.
 4. It validates the project, runs connection tests, builds/tests on iPhone and iPad simulators, and verifies an unsigned device archive.
-5. Download **ThriftForGood-iOS-build-results** for logs, simulator ZIP, unsigned archive ZIP and test results.
+5. Download **ThriftForGood-iOS-builds** for the compiled simulator ZIP and unsigned device archive. They are published before screen tests. **ThriftForGood-iOS-build-results** additionally contains the logs, screenshots and test results after checks finish.
 
 These artifacts are **not signed device installers**. Simulator builds run only in a compatible Mac simulator. An unsigned device archive verifies compilation and does not replace signing.
 
@@ -126,4 +126,4 @@ After shared frontend changes, rebuild the PC image with docker compose up -d --
 
 Opening the committed Xcode project requires no third-party generator. If source membership changes, install the xcodeproj Ruby gem (version 1.28.1) and run ruby scripts/generate_ios_project.rb. Windows developers can use ios/project-tools.Dockerfile to run that generator. It does not manage signing.
 
-References: [Apple distribution](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases), [preparing distribution](https://developer.apple.com/documentation/xcode/preparing-your-app-for-distribution), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/), [registered devices](https://developer.apple.com/help/account/devices/devices-overview/), [membership fee waiver](https://developer.apple.com/support/membership-fee-waiver/), [local-network ATS exceptions](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
+References: [Apple distribution](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases), [free Personal Team testing](https://developer.apple.com/help/account/basics/about-your-developer-account), [preparing distribution](https://developer.apple.com/documentation/xcode/preparing-your-app-for-distribution), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/), [registered devices](https://developer.apple.com/help/account/devices/devices-overview/), [membership fee waiver](https://developer.apple.com/support/membership-fee-waiver/), [local-network ATS exceptions](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
