@@ -1,0 +1,526 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"83A43E56C10CD6D41E834FFE" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Sources/AppDelegate.swift";
+			"sourceTree" = "<group>";
+		};
+		"2164D35969E87975D4673B61" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Sources/Core/ServerPolicy.swift";
+			"sourceTree" = "<group>";
+		};
+		"2643F3152274E61E6C753D43" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Sources/QRScannerViewController.swift";
+			"sourceTree" = "<group>";
+		};
+		"36B25C2ABAA9BC68892D25FB" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Sources/WorkspaceViewController.swift";
+			"sourceTree" = "<group>";
+		};
+		"60B4E00CD9DC699227AAC1C6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Tests/ServerPolicyTests.swift";
+			"sourceTree" = "<group>";
+		};
+		"DCB65E1B30264DAA344F3247" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UITests/ConnectionScreenTests.swift";
+			"sourceTree" = "<group>";
+		};
+		"9F36DE8808698262C65FEFF7" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder.assetcatalog";
+			"path" = "Sources/Assets.xcassets";
+			"sourceTree" = "<group>";
+		};
+		"1FA52714B88B32240058A396" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "file.storyboard";
+			"path" = "Sources/LaunchScreen.storyboard";
+			"sourceTree" = "<group>";
+		};
+		"F1D732FE98D5BACD89BAB2E6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.xml";
+			"path" = "Sources/PrivacyInfo.xcprivacy";
+			"sourceTree" = "<group>";
+		};
+		"2293589226D16A90EE1D608B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Sources/Info.plist";
+			"sourceTree" = "<group>";
+		};
+		"2EFA33483B9750B31AC4919A" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "ThriftForGood.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"3CBA24523284BE0725EC98BA" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"INFOPLIST_FILE" = "Sources/Info.plist";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"MARKETING_VERSION" = "0.4.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
+			};
+			"name" = "Debug";
+		};
+		"B4C3123AF616FBB21BE9FB64" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"INFOPLIST_FILE" = "Sources/Info.plist";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"MARKETING_VERSION" = "0.4.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
+			};
+			"name" = "Release";
+		};
+		"5CFD6B1B752B33CC43087E9D" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"3CBA24523284BE0725EC98BA",
+				"B4C3123AF616FBB21BE9FB64",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"C29E2BA23B666AB2006B1685" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "83A43E56C10CD6D41E834FFE";
+		};
+		"1A15D63E9FAE58EA7014613B" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "2164D35969E87975D4673B61";
+		};
+		"6390465DC5508176C5F9E2A9" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "2643F3152274E61E6C753D43";
+		};
+		"0F1D9CF6324FA7AABA426E4F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "36B25C2ABAA9BC68892D25FB";
+		};
+		"BE69E1E7D3BFB70DA07F74D9" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"C29E2BA23B666AB2006B1685",
+				"1A15D63E9FAE58EA7014613B",
+				"6390465DC5508176C5F9E2A9",
+				"0F1D9CF6324FA7AABA426E4F",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"83EE784535D86484BAD878BF" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"506A5E74A0DBB66CBD57CB2D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "9F36DE8808698262C65FEFF7";
+		};
+		"2CA69F3BF9D1200E697F0298" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "1FA52714B88B32240058A396";
+		};
+		"8809CE0143132002D14885EF" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F1D732FE98D5BACD89BAB2E6";
+		};
+		"8D12A7E99F0E7BB940D7B62C" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"506A5E74A0DBB66CBD57CB2D",
+				"2CA69F3BF9D1200E697F0298",
+				"8809CE0143132002D14885EF",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"CA1CC7581E47C8C53D1E906A" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "ThriftForGood";
+			"productName" = "ThriftForGood";
+			"productType" = "com.apple.product-type.application";
+			"productReference" = "2EFA33483B9750B31AC4919A";
+			"buildConfigurationList" = "5CFD6B1B752B33CC43087E9D";
+			"buildPhases" = (
+				"BE69E1E7D3BFB70DA07F74D9",
+				"83EE784535D86484BAD878BF",
+				"8D12A7E99F0E7BB940D7B62C",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+		};
+		"898C1BF691B8135E80EBAD5B" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = 0;
+			"path" = "ThriftForGoodTests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"1FD95BA488B30E389D8ECD43" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "98F54143AB4E86B28C3AFEE0";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "CA1CC7581E47C8C53D1E906A";
+			"remoteInfo" = "ThriftForGood";
+		};
+		"73A8C9A35BF435164E40E71C" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "CA1CC7581E47C8C53D1E906A";
+			"targetProxy" = "1FD95BA488B30E389D8ECD43";
+		};
+		"B0B9981DC1ED4B8117E3150D" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile.xctestThriftForGoodTests";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/ThriftForGood.app/ThriftForGood";
+				"BUNDLE_LOADER" = "$(TEST_HOST)";
+			};
+			"name" = "Debug";
+		};
+		"7AFDB26F78FA0466F02FC22E" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile.xctestThriftForGoodTests";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/ThriftForGood.app/ThriftForGood";
+				"BUNDLE_LOADER" = "$(TEST_HOST)";
+			};
+			"name" = "Release";
+		};
+		"F1B6360A7FF2767F7521FCE5" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"B0B9981DC1ED4B8117E3150D",
+				"7AFDB26F78FA0466F02FC22E",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"F368331C4C8C0A75296D2423" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "60B4E00CD9DC699227AAC1C6";
+		};
+		"CA6CBF71F0A1DD1EDD4339C3" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"F368331C4C8C0A75296D2423",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"696432E6732A989BFC06B103" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"5F3468DD3586ED874E06EF51" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"077275C70EB8039A147199B3" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "ThriftForGoodTests";
+			"productName" = "ThriftForGoodTests";
+			"productType" = "com.apple.product-type.bundle.unit-test";
+			"productReference" = "898C1BF691B8135E80EBAD5B";
+			"buildConfigurationList" = "F1B6360A7FF2767F7521FCE5";
+			"buildPhases" = (
+				"CA6CBF71F0A1DD1EDD4339C3",
+				"696432E6732A989BFC06B103",
+				"5F3468DD3586ED874E06EF51",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"73A8C9A35BF435164E40E71C",
+			);
+		};
+		"DD46551C1AB79886AE5DD315" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = 0;
+			"path" = "ThriftForGoodUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"1B91EC12949607B851AE7C40" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "98F54143AB4E86B28C3AFEE0";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "CA1CC7581E47C8C53D1E906A";
+			"remoteInfo" = "ThriftForGood";
+		};
+		"FA58CE9367BE8F2CF4EC9171" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "CA1CC7581E47C8C53D1E906A";
+			"targetProxy" = "1B91EC12949607B851AE7C40";
+		};
+		"81E5A02C4546F497315F9DD4" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile.xctestThriftForGoodUITests";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"TEST_TARGET_NAME" = "ThriftForGood";
+			};
+			"name" = "Debug";
+		};
+		"7964AAF7936D34305458AC82" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "org.givingflow.mobile.xctestThriftForGoodUITests";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"TEST_TARGET_NAME" = "ThriftForGood";
+			};
+			"name" = "Release";
+		};
+		"1EE78F8E696CB7A9C7C69B6F" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"81E5A02C4546F497315F9DD4",
+				"7964AAF7936D34305458AC82",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"8AA890D353C6ECC35A9D1627" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "DCB65E1B30264DAA344F3247";
+		};
+		"F0E232FADEAA77F3648D24C6" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"8AA890D353C6ECC35A9D1627",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"7DAE671BE922F137999518E0" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"62DF47D54AC5BDAD3BDBEBA5" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"2DFF12CEADF576B800664C1B" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "ThriftForGoodUITests";
+			"productName" = "ThriftForGoodUITests";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"productReference" = "DD46551C1AB79886AE5DD315";
+			"buildConfigurationList" = "1EE78F8E696CB7A9C7C69B6F";
+			"buildPhases" = (
+				"F0E232FADEAA77F3648D24C6",
+				"7DAE671BE922F137999518E0",
+				"62DF47D54AC5BDAD3BDBEBA5",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"FA58CE9367BE8F2CF4EC9171",
+			);
+		};
+		"FBDC4F23F93125BBEEAE800C" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"2EFA33483B9750B31AC4919A",
+				"898C1BF691B8135E80EBAD5B",
+				"DD46551C1AB79886AE5DD315",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"BCE16DD0260827ECF338C787" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"83A43E56C10CD6D41E834FFE",
+				"2164D35969E87975D4673B61",
+				"2643F3152274E61E6C753D43",
+				"36B25C2ABAA9BC68892D25FB",
+				"9F36DE8808698262C65FEFF7",
+				"1FA52714B88B32240058A396",
+				"F1D732FE98D5BACD89BAB2E6",
+				"2293589226D16A90EE1D608B",
+			);
+			"name" = "Sources";
+			"sourceTree" = "<group>";
+		};
+		"04D13FD0AA6F0197CF2C9990" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"60B4E00CD9DC699227AAC1C6",
+				"DCB65E1B30264DAA344F3247",
+			);
+			"name" = "Tests";
+			"sourceTree" = "<group>";
+		};
+		"B28B7AF69320201D1CF206EB" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"BCE16DD0260827ECF338C787",
+				"04D13FD0AA6F0197CF2C9990",
+				"FBDC4F23F93125BBEEAE800C",
+			);
+			"sourceTree" = "<group>";
+		};
+		"AB52CB08E0FDF02BF6C67C33" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"SWIFT_STRICT_CONCURRENCY" = "minimal";
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+				"GCC_C_LANGUAGE_STANDARD" = "gnu17";
+				"ONLY_ACTIVE_ARCH" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"ENABLE_TESTABILITY" = "YES";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+			};
+			"name" = "Debug";
+		};
+		"5283471FF90C511CFE244FFF" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"SWIFT_STRICT_CONCURRENCY" = "minimal";
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
+				"GCC_C_LANGUAGE_STANDARD" = "gnu17";
+				"ONLY_ACTIVE_ARCH" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"VALIDATE_PRODUCT" = "YES";
+			};
+			"name" = "Release";
+		};
+		"4BA304E783CFBB9FA6E56552" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"AB52CB08E0FDF02BF6C67C33",
+				"5283471FF90C511CFE244FFF",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"98F54143AB4E86B28C3AFEE0" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "1600";
+				"TargetAttributes" = {
+					"CA1CC7581E47C8C53D1E906A" = {
+						"CreatedOnToolsVersion" = "16.0";
+					};
+					"077275C70EB8039A147199B3" = {
+						"CreatedOnToolsVersion" = "16.0";
+						"TestTargetID" = "CA1CC7581E47C8C53D1E906A";
+					};
+					"2DFF12CEADF576B800664C1B" = {
+						"CreatedOnToolsVersion" = "16.0";
+						"TestTargetID" = "CA1CC7581E47C8C53D1E906A";
+					};
+				};
+			};
+			"buildConfigurationList" = "4BA304E783CFBB9FA6E56552";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "B28B7AF69320201D1CF206EB";
+			"productRefGroup" = "FBDC4F23F93125BBEEAE800C";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"CA1CC7581E47C8C53D1E906A",
+				"077275C70EB8039A147199B3",
+				"2DFF12CEADF576B800664C1B",
+			);
+		};
+	};
+	"rootObject" = "98F54143AB4E86B28C3AFEE0";
+}

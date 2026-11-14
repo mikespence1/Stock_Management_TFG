@@ -44,9 +44,9 @@ test('a capture failure shows an error and does not add a photo',async()=>{
  expect(onChange).not.toHaveBeenCalled();
 });
 
-test('Android camera returns a photo that saves immediately against the original bag',async()=>{
+test.each(['GivingFlowAndroid','GivingFlowIOS'])('%s camera saves immediately against the original bag',async(platform)=>{
  const takePhoto=vi.fn((requestId:string)=>queueMicrotask(()=>window.dispatchEvent(new CustomEvent('givingflow:photo',{detail:{requestId,base64:btoa('test-jpeg')}}))));
- vi.stubGlobal('GivingFlowAndroid',{takePhoto,scanQr:vi.fn(),printLabels:vi.fn()});
+ vi.stubGlobal(platform,{takePhoto,scanQr:vi.fn(),printLabels:vi.fn()});
  const upload=vi.fn().mockResolvedValue({filename:'android-capture.jpg'}),onChange=vi.fn();
  render(<PhotoCapture donationId="android-bag" photos={[]} onChange={onChange} upload={upload} onBusy={vi.fn()}/>);
  fireEvent.click(screen.getByRole('button',{name:'Take photos'}));

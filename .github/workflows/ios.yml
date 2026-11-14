@@ -1,0 +1,91 @@
+name: iOS build and tests
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ios/**"
+      - "scripts/generate_ios_project.py"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - "scripts/generate_ios_project.py"
+      - ".github/workflows/ios.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-ios:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate project and property lists
+        shell: bash
+        run: |
+          plutil -lint ios/ThriftForGood.xcodeproj/project.pbxproj ios/Sources/Info.plist ios/Sources/PrivacyInfo.xcprivacy
+          python3 scripts/generate_ios_project.py
+          git diff --exit-code -- ios/ThriftForGood.xcodeproj
+          xcodebuild -version
+          xcodebuild -list -project ios/ThriftForGood.xcodeproj
+      - name: Test connection and origin policies
+        run: swift test --package-path ios
+      - name: Select available iPhone and iPad simulators
+        id: simulators
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          devices = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "--json"]))["devices"]
+          runtimes = sorted((key for key in devices if ".iOS-" in key), key=lambda key: tuple(map(int, re.findall(r"\d+", key))), reverse=True)
+          for runtime in runtimes:
+              phones = [device for device in devices[runtime] if device["name"].startswith("iPhone")]
+              tablets = [device for device in devices[runtime] if device["name"].startswith("iPad")]
+              if phones and tablets:
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+                      output.write("phone=" + phones[0]["udid"] + "\n")
+                      output.write("tablet=" + tablets[0]["udid"] + "\n")
+                  print(runtime, phones[0]["name"], tablets[0]["name"])
+                  break
+          else:
+              raise SystemExit("No runtime has both an iPhone and iPad simulator")
+          PY
+      - name: Build and test on iPhone and iPad
+        env:
+          PHONE: ${{ steps.simulators.outputs.phone }}
+          TABLET: ${{ steps.simulators.outputs.tablet }}
+        shell: bash
+        run: |
+          mkdir -p ios/build
+          xcodebuild test \
+            -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
+            -configuration Debug -derivedDataPath ios/DerivedData \
+            -destination "platform=iOS Simulator,id=$PHONE" \
+            -destination "platform=iOS Simulator,id=$TABLET" \
+            -resultBundlePath ios/TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO | tee ios/build/simulator-tests.log
+      - name: Verify device archive without signing
+        shell: bash
+        run: |
+          xcodebuild archive \
+            -project ios/ThriftForGood.xcodeproj -scheme ThriftForGood \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath ios/build/ThriftForGood-unsigned.xcarchive \
+            CODE_SIGNING_ALLOWED=NO | tee ios/build/device-build.log
+          ditto -c -k --keepParent ios/DerivedData/Build/Products/Debug-iphonesimulator/ThriftForGood.app ios/build/ThriftForGood-Simulator.zip
+          ditto -c -k --keepParent ios/build/ThriftForGood-unsigned.xcarchive ios/build/ThriftForGood-unsigned.xcarchive.zip
+      - name: Save build results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ThriftForGood-iOS-build-results
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            ios/build/*.log
+            ios/build/*.zip
+            ios/TestResults.xcresult

@@ -20,3 +20,13 @@ android/*.jks
 *.keystore
 artifacts/*.apk
 artifacts/*.sha256
+ios/.build/
+ios/DerivedData/
+ios/TestResults.xcresult/
+ios/build/
+**/xcuserdata/
+*.xcuserstate
+*.ipa
+*.xcarchive/
+*.p12
+*.mobileprovision

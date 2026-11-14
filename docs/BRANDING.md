@@ -24,4 +24,4 @@ Dark turquoise `#0C7376` and pale turquoise `#E9F7F7` support readable controls 
 
 User-facing names, headers, loading screens, launcher icon, QR labels, installer page and Android print titles use Thrift for Good. Internal package ID, session cookies, bridge names, database identifiers and saved server preferences retain their existing identifiers so the branding update preserves access and data.
 
-The Android package keeps its signing certificate and increases its version code to 2, allowing it to update the previously installed test app.
+The branded Android package kept its signing certificate and increased its version code to 2. The subsequent NetBird pilot update uses version code 3 with the same signing certificate, allowing an in-place update.

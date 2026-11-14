@@ -18,7 +18,7 @@ public final class ServerPolicy {
                 throw new IllegalArgumentException();
             }
             if (scheme.equals("http") && !isLocalHost(host)) {
-                throw new IllegalArgumentException("HTTP testing is limited to a local PC address. Use HTTPS for an internet server.");
+                throw new IllegalArgumentException("HTTP testing is limited to a local PC or private VPN address. Use HTTPS for an internet server.");
             }
             return new URI(scheme, null, host.toLowerCase(Locale.ROOT), uri.getPort(), null, null, null).toString();
         } catch (IllegalArgumentException error) {
@@ -47,7 +47,10 @@ public final class ServerPolicy {
         try {
             int a = Integer.parseInt(parts[0]), b = Integer.parseInt(parts[1]);
             for (String part : parts) { int v = Integer.parseInt(part); if(v < 0 || v > 255) return false; }
-            return a == 10 || a == 127 || (a == 192 && b == 168) || (a == 172 && b >= 16 && b <= 31);
+            // NetBird uses the shared-address range 100.64.0.0/10 for its encrypted overlay.
+            // This permits a VPN-only test endpoint; the caller must keep the VPN connected.
+            return a == 10 || a == 127 || (a == 192 && b == 168) || (a == 172 && b >= 16 && b <= 31)
+                    || (a == 100 && b >= 64 && b <= 127);
         } catch (NumberFormatException e) { return false; }
     }
 }

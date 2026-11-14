@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, Check, ImagePlus, X } from 'lucide-react';
-import { isAndroidApp, takeAndroidPhoto } from './androidBridge';
+import { isNativeApp, takeNativePhoto } from './nativeBridge';
 
 type Props = {
   donationId: string;
@@ -61,10 +61,10 @@ export default function PhotoCapture({donationId, photos, onChange, upload, onBu
   }
   async function openCamera() {
     setError('');
-    if(isAndroidApp()){
+    if(isNativeApp()){
       if(nativePending)return;
       setNativePending(true);onBusy(true);
-      try{const file=await takeAndroidPhoto();if(mounted.current)await save(file);}
+      try{const file=await takeNativePhoto();if(mounted.current)await save(file);}
       catch(error){if(mounted.current&&(error as Error).message!=='cancelled')setError((error as Error).message);}
       finally{if(mounted.current){setNativePending(false);onBusy(false);}}
     }else if(typeof navigator.mediaDevices?.getUserMedia==='function')setCamera(true);
@@ -75,7 +75,7 @@ export default function PhotoCapture({donationId, photos, onChange, upload, onBu
     <div className="capture-heading"><b>Item photos · {photos.length}/3</b><span>{saving?'Saving to database…':photos.length>0?<><Check size={12}/>Saved to this bag</>:'Take photos without leaving this form'}</span></div>
     {camera&&<div className="live-camera"><video ref={video} playsInline muted onLoadedData={()=>setReady(true)} aria-label="Item camera preview"/><div className="camera-tools"><span>Photo {photos.length+1} of 3</span><button type="button" className="shutter" disabled={!ready||saving} onClick={snap} aria-label="Take and save photo"><Camera size={23}/></button><button type="button" className="icon-button" aria-label="Close camera" onClick={()=>setCamera(false)}><X size={21}/></button></div></div>}
     <div className="upload-grid">{photos.map((p,i)=><div className="upload-preview" key={p}><img src={`/api/photos/${p}`} alt={`Item photo ${i+1}`}/><button type="button" className="icon-button" disabled={saving} aria-label={`Remove photo ${i+1}`} onClick={()=>onChange(photos.filter(x=>x!==p))}><X size={15}/></button></div>)}</div>
-    {hasRoom&&<div className="capture-actions"><button type="button" className="button primary" disabled={!donationId||saving||nativePending} onClick={openCamera}><Camera size={17}/>{camera?'Camera open':'Take photos'}</button><label className={`button secondary file-action ${!donationId||saving?'disabled':''}`}><Camera size={15}/>{isAndroidApp()?'Choose image':'Device camera'}<input ref={nativeCamera} type="file" accept="image/*" capture="environment" disabled={!donationId||saving||nativePending} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(file)await save(file);input.value='';}}/></label><label className={`button secondary file-action ${!donationId||saving?'disabled':''}`}><ImagePlus size={15}/>Library<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!donationId||saving||nativePending} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(file)await save(file);input.value='';}}/></label></div>}
+    {hasRoom&&<div className="capture-actions"><button type="button" className="button primary" disabled={!donationId||saving||nativePending} onClick={openCamera}><Camera size={17}/>{camera?'Camera open':'Take photos'}</button><label className={`button secondary file-action ${!donationId||saving?'disabled':''}`}><Camera size={15}/>{isNativeApp()?'Choose image':'Device camera'}<input ref={nativeCamera} type="file" accept="image/*" capture="environment" disabled={!donationId||saving||nativePending} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(file)await save(file);input.value='';}}/></label><label className={`button secondary file-action ${!donationId||saving?'disabled':''}`}><ImagePlus size={15}/>Library<input type="file" accept="image/jpeg,image/png,image/webp" disabled={!donationId||saving||nativePending} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(file)await save(file);input.value='';}}/></label></div>}
     {!donationId&&<small>Select a donation bag before taking photos.</small>}
     {error&&<p className="form-error" role="alert">{error}</p>}
   </div>;

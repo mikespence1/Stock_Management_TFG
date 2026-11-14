@@ -8,4 +8,5 @@ backend/*.db
 .pytest_cache
 docs/screenshots
 android
+ios
 pytest-cache-*

@@ -96,12 +96,12 @@ public class MainActivity extends Activity {
         content.removeAllViews(); connection.setText("PC connection ");
         ScrollView scroll = new ScrollView(this); LinearLayout form = new LinearLayout(this);form.setOrientation(1);form.setPadding(dp(24),dp(28),dp(24),dp(24));scroll.addView(form);content.addView(scroll);
         TextView title=text("Connect to your shop PC",24,Color.rgb(50,50,50));form.addView(title);
-        TextView intro=text("Keep this phone and the PC on the same Wi-Fi network. The app uses the PC’s existing donation database.",14,Color.rgb(98,98,98));intro.setPadding(0,dp(12),0,dp(22));form.addView(intro);
+        TextView intro=text("Connect through the shop Wi-Fi or a connected NetBird private VPN. The app uses the PC’s existing donation database.",14,Color.rgb(98,98,98));intro.setPadding(0,dp(12),0,dp(22));form.addView(intro);
         form.addView(text("PC server address",12,Color.rgb(12,115,118)));
         EditText address=new EditText(this);address.setSingleLine(true);address.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);address.setText(server.isEmpty()?BuildConfig.DEFAULT_SERVER:server);address.setTextSize(16);form.addView(address,new LinearLayout.LayoutParams(-1,dp(56)));
         TextView status=text(error,13,Color.rgb(157,75,54));status.setPadding(0,dp(14),0,dp(14));form.addView(status);
         Button connect=new Button(this);connect.setText("Test connection & open workspace");connect.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(241,86,42)));connect.setTextColor(Color.rgb(23,23,23));form.addView(connect,new LinearLayout.LayoutParams(-1,dp(56)));
-        TextView help=text("Local test: HTTP is supported on a trusted LAN. Sign in with the same staff account as on the PC. Camera and QR scanning use native Android controls.\n\nIf the connection fails: keep the PC awake, start Docker and the app, check the address, and run the PC’s phone setup script as Administrator to allow port 8000 on the private network.",12,Color.rgb(98,98,98));help.setPadding(0,dp(24),0,0);form.addView(help);
+        TextView help=text("Pilot: HTTP is supported on a trusted LAN or inside a connected private VPN. For NetBird, use the PC’s NetBird IP and keep NetBird connected on both devices. Sign in with the same staff account as on the PC. Camera and QR scanning use native Android controls.\n\nIf the connection fails: keep the PC awake, start Docker and the app, check the server address, NetBird access policy and PC firewall rule for TCP 8000. Use HTTPS with a trusted certificate for production.",12,Color.rgb(98,98,98));help.setPadding(0,dp(24),0,0);form.addView(help);
         connect.setOnClickListener(v -> {
             final String target;
             try {target=ServerPolicy.normalize(address.getText().toString());}

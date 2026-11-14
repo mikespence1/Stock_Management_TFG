@@ -1,5 +1,7 @@
 # Test Thrift for Good on Android
 
+For access from other shops or mobile data, follow [the NetBird PC and Android setup guide](NETBIRD.md). Version `0.3.1-test` (version code 3) supports NetBird's private VPN addresses; install the updated APK first.
+
 ## Install on your phone
 
 The Android app uses the React workspace served by your PC, plus native Android photo capture, QR scanning and printing. Its data flow is:

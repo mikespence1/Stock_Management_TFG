@@ -60,11 +60,11 @@ test('scanning the wrong bag is rejected before any processing transition',async
  expect(fetchMock.mock.calls.some(([url])=>url==='/api/donations/bag-2/action')).toBe(false);
 });
 
-test('Android native QR scanning selects the bag and native printing uses its exact ID',async()=>{
+test.each(['GivingFlowAndroid','GivingFlowIOS'])('%s QR scanning selects the bag and native printing uses its exact ID',async(platform)=>{
  setup();
  const printLabels=vi.fn();
  const scanQr=vi.fn((requestId:string)=>queueMicrotask(()=>window.dispatchEvent(new CustomEvent('givingflow:qr',{detail:{requestId,value:'BAG-SECOND'}}))));
- vi.stubGlobal('GivingFlowAndroid',{scanQr,takePhoto:vi.fn(),printLabels});
+ vi.stubGlobal(platform,{scanQr,takePhoto:vi.fn(),printLabels});
  render(<App/>);
  fireEvent.click(await screen.findByRole('button',{name:/On the way/}));
  fireEvent.click(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('button',{name:'Scan this bag'}));

@@ -6,6 +6,10 @@ The web workspace and Android app use the official Thrift for Good logo and webs
 
 **Android test app:** open **http://192.168.70.5:8000/android** on your phone while connected to the same Wi-Fi network as this PC. See [Android installation and end-to-end testing](docs/ANDROID.md). The APK includes native camera capture, QR scanning and label printing, and uses this PC's existing database.
 
+**iPhone and iPad:** the native iOS project is under `ios/`, with camera capture, QR scanning, label printing and NetBird support. See [iOS installation and distribution](docs/IOS.md). Installation requires an Apple-signed build; an Android APK cannot be used on iOS.
+
+**Other locations:** use [the NetBird PC and Android setup guide](docs/NETBIRD.md) for a private VPN pilot that keeps the application, PostgreSQL, photos and item history on this PC.
+
 ## Start the application
 
 Docker Desktop must be running. From this project folder in PowerShell:
