@@ -166,3 +166,19 @@ test.each(['Donate','Mend','Clean','Dispose'])('%s saves without photos while ke
  const call=fetchMock.mock.calls.find(([url])=>url==='/api/items')!;
  expect(JSON.parse(call[1].body)).toMatchObject({category,photos:[]});
 });
+
+
+test.each([{categories:[] as string[]}, {categories:['Re-sale']}, {categories:['Re-sale','Re-sale','Re-sale','Donate']}])('overview bars handle empty and dominant categories: $categories',async({categories})=>{
+ const {data}=setup();
+ categories.forEach((category,index)=>data.items.push({id:`item-${index}`,reference:`ITM-${index}`,title:`Test item ${index}`,status:'available',category,item_type:'clothing',donation_id:'bag-1',details:{condition:'good'},location:'Shelf 1',created_at:'2026-11-14T00:00:00Z'}));
+ render(<App/>);
+ await screen.findByRole('button',{name:/Being sorted/});
+ fireEvent.click(screen.getAllByRole('button',{name:'Overview'})[0]);
+ for(const meter of screen.getAllByRole('meter')){
+  const label=meter.getAttribute('aria-label')!.replace(' share of items','');
+  const count=categories.filter(category=>category===label).length;
+  const expected=categories.length?count/categories.length*100:0;
+  expect(Number(meter.getAttribute('aria-valuenow'))).toBe(expected);
+  expect((meter.firstElementChild as HTMLElement).style.width).toBe(`${expected}%`);
+ }
+});

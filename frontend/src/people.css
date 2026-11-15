@@ -5,8 +5,8 @@
 .people-kpi{padding:22px;display:flex;flex-direction:column;gap:8px;border-top:3px solid #2b8d85}
 .people-kpi strong{font-size:30px;line-height:1.2;color:#214d4e}
 .people-kpi span{font-size:12px;color:#646f70}
-.people-charts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.people-charts>.panel{padding:24px}
+.people-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.people-charts>.panel{padding:24px;min-width:0}
 .people-charts p,.people-dashboard .panel-title p{font-size:12px;line-height:1.6;margin-top:8px}
 .consent-stack{height:32px;display:flex;border-radius:8px;overflow:hidden;margin:24px 0;background:#edf0f0}
 .chart-legend{display:grid;gap:18px;font-size:12px}
@@ -14,12 +14,14 @@
 .chart-legend i{width:10px;height:10px;flex-shrink:0;border-radius:3px}
 .chart-legend span{flex:1}.chart-legend b{white-space:nowrap}.chart-legend small{font-weight:400;color:#747f80}
 .nationality-bars{display:grid;gap:14px;margin-top:24px;max-height:300px;overflow-y:auto}
-.nationality-bars button{display:grid;grid-template-columns:minmax(80px,1fr) 2fr 25px;align-items:center;gap:12px;background:none;text-align:left;font-size:12px;padding:4px}
+.nationality-bars button{display:grid;grid-template-columns:minmax(80px,1fr) minmax(0,2fr) minmax(3ch,max-content);align-items:center;gap:12px;background:none;text-align:left;font-size:12px;padding:4px}
+.nationality-bars button>b{text-align:right}
 .nationality-bars button[aria-pressed=true]{background:#e6f3f1;border-radius:4px}
-.nationality-bars button>div{height:12px;background:#edf3f2;border-radius:4px;overflow:hidden}
-.nationality-bars i{height:100%;background:#2b8d85;display:block;border-radius:4px}
+.nationality-bars button>span{min-width:0;overflow-wrap:anywhere}
+.nationality-bars button>div{height:12px;min-width:0;background:#edf3f2;border-radius:4px;overflow:hidden}
+.nationality-bars i{height:100%;max-width:100%;background:#2b8d85;display:block;border-radius:4px}
 .people-dashboard .panel-title{padding:22px}.people-dashboard .filter-bar>input{flex:1;min-width:100px;font-size:12px}
-.count-bar{display:inline-block;height:8px;background:#9dcfca;margin-right:10px;border-radius:3px}
+.count-bar{display:inline-block;max-width:60px;vertical-align:middle;height:8px;background:#9dcfca;margin-right:10px;border-radius:3px}
 .consent-card{display:flex;gap:12px;padding:16px;background:#eff7f5;border:1px solid #bddbd5;border-radius:8px;margin:20px 0;font-size:12px;line-height:1.6}
 .consent-card input{margin-top:4px}.consent-card small{display:block;font-size:11px;color:#586c68;margin-top:5px}
 .dashboard-empty{padding:20px}.cause-card>.button{margin-top:14px}
