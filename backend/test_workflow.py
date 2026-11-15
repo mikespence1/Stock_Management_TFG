@@ -2,6 +2,8 @@
 import io
 import os
 import uuid
+from zipfile import ZipFile
+from xml.etree import ElementTree as ET
 
 import pytest
 from fastapi.testclient import TestClient
@@ -51,10 +53,21 @@ def bag_action(client, bag, action):
     return r.json()
 
 def sorting_bag(client):
-    bag = new_bag(client)
-    return bag_action(client, bag_action(client, bag, 'dispatch'), 'receive')
+    return new_bag(client)
+
+def upload_photos(client, bag, count=1):
+    photos=[]
+    for i in range(count):
+        stream=io.BytesIO()
+        Image.new('RGB',(20,20),['red','green','blue'][i % 3]).save(stream,'JPEG')
+        result=client.post('/api/uploads',data={'donation_id':bag['id']},files={'file':('test.jpg',stream.getvalue(),'image/jpeg')})
+        assert result.status_code==201,result.text
+        photos.append(result.json()['filename'])
+    return photos
 
 def create_item(client, bag, category='Donate', **extra):
+    if 'photos' not in extra:
+        extra['photos']=upload_photos(client,bag,3) if category=='Re-sale' else []
     body = {'donation_id':bag['id'], 'category':category, 'item_type':'clothing', 'destination':'Community centre', 'disposal_method':'Textile recycling', **extra}
     return client.post('/api/items', json=body)
 
@@ -89,9 +102,8 @@ def test_anonymity_and_contact_validation(client):
 
 def test_bag_lifecycle_and_qr(client):
     bag = new_bag(client)
-    assert create_item(client, bag).status_code == 409
-    bag = bag_action(client, bag, 'dispatch')
-    bag = bag_action(client, bag, 'receive')
+    assert bag['status']=='sorting'
+    assert client.post(f'/api/donations/{bag["id"]}/action',json={'action':'dispatch','version':bag['version']}).status_code==409
     assert client.post(f'/api/donations/{bag["id"]}/action',json={'action':'finish','version':bag['version']}).status_code == 422
     r = create_item(client, bag)
     assert r.status_code == 201
@@ -109,7 +121,7 @@ def test_clothing_validation_and_photo_upload(client):
     bag = sorting_bag(client)
     cause = bootstrap(client)['causes'][0]['id']
     values = dict(title='Cotton shirt',brand='Demo',condition='good',location='A-01',cause_id=cause,materials=[{'name':'Cotton','percent':100}])
-    assert create_item(client,bag,'Re-sale',**values).status_code == 422
+    assert create_item(client,bag,'Re-sale',photos=[],**values).status_code == 422
     photos=[]
     for color in ['red','green','blue']:
         stream=io.BytesIO()
@@ -158,13 +170,13 @@ def test_old_prohibited_resale_stock_is_rerouted_without_losing_bag_identity(cli
     item=next(i for i in bootstrap(client)['items'] if i['id']==key)
     assert item['status']=='awaiting_sort' and not item['listed_online']
     assert item['reference']==reference and item['donation_id']==bag['id']
-    response=client.put(f'/api/items/{key}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Donate','item_type':'toy','destination':'Community centre'})
+    response=client.put(f'/api/items/{key}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Donate','item_type':'toy','destination':'Community centre','photos':upload_photos(client,bag)})
     assert response.status_code==200,response.text
     assert response.json()['id']==key
 
 def test_camera_photos_stay_with_original_donor_and_bag(client, monkeypatch):
     bag=new_bag(client,False)
-    bag=bag_action(client,bag_action(client,bag,'dispatch'),'receive')
+    assert bag['status']=='sorting'
     stream=io.BytesIO()
     Image.new('RGB',(20,20),'green').save(stream,'JPEG')
     captured=client.post('/api/uploads',data={'donation_id':bag['id']},files={'file':('capture.jpg',stream.getvalue(),'image/jpeg')})
@@ -200,7 +212,7 @@ def test_service_return_preserves_item_identity(client,category):
     assert item['status'] == 'in_service'
     item = item_action(client,item,'return')
     assert item['status'] == 'awaiting_sort'
-    r = client.put(f'/api/items/{item["id"]}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Donate','item_type':'clothing','destination':'Safe Haven'})
+    r = client.put(f'/api/items/{item["id"]}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Donate','item_type':'clothing','destination':'Safe Haven','photos':item['details']['photos']})
     assert r.status_code == 200,r.text
     assert r.json()['id'] == original_id and r.json()['reference'] == original_ref
     item = item_action(client,r.json(),'donate')
@@ -251,3 +263,181 @@ def test_cause_fk_and_origin_protection(client):
     assert client.post('/api/donations',json={'donor':{'name':'Test','cause_ids':['not-a-cause']}}).status_code==404
     assert client.post('/api/customers',json={'name':'Blocked'},headers={'origin':'https://evil.test'}).status_code==403
     assert client.post('/api/causes',json={'name':'Local learning fund','description':'Books for children'}).status_code==201
+
+@pytest.mark.parametrize('item_type', ['clothing','book','jewellery','ornament'])
+def test_every_resale_type_requires_three_photos_before_any_item_is_saved(client,item_type):
+    bag=sorting_bag(client)
+    photos=upload_photos(client,bag,3)
+    values=dict(item_type=item_type,title='Resale item',brand='Maker',author='Writer',condition='good',location='Shelf',cause_id=bootstrap(client)['causes'][0]['id'],materials=[{'name':'Cotton','percent':100}])
+    before=len(bootstrap(client)['items'])
+    for invalid in [[],photos[:1],photos[:2],photos+[photos[0]],[photos[0]]*3]:
+        assert create_item(client,bag,'Re-sale',photos=invalid,**values).status_code==422
+        assert len(bootstrap(client)['items'])==before
+    assert create_item(client,bag,'Re-sale',photos=photos,**values).status_code==201
+
+def test_other_routes_allow_no_photos_and_legacy_resale_exports_are_blocked(client):
+    bag=sorting_bag(client)
+    for category in ['Donate','Mend','Clean','Dispose']:
+        assert create_item(client,bag,category,photos=[]).status_code==201
+        assert create_item(client,bag,category).status_code==201
+        assert create_item(client,bag,category,photos=upload_photos(client,bag,3)).status_code==201
+        assert create_item(client,bag,category,photos=upload_photos(client,bag,3)+['extra.jpg']).status_code==422
+        photographed=create_item(client,bag,category,photos=upload_photos(client,bag)).json()
+        corrected=client.put(f'/api/items/{photographed["id"]}',params={'version':photographed['version']},json={**item_body(photographed),'photos':[]})
+        assert corrected.status_code==200,corrected.text
+        assert corrected.json()['details']['photos']==[]
+    with module.SessionLocal() as db:
+        item=module.Item(donation_id=bag['id'],category='Re-sale',item_type='book',title='Legacy book',status='available',details={})
+        db.add(item);db.commit();key=item.id;version=item.version
+    assert client.get(f'/api/items/{key}/shopify-export').status_code==422
+    assert client.post(f'/api/items/{key}/action',json={'action':'toggle_online','version':version}).status_code==422
+    assert client.post(f'/api/items/{key}/sale',json={'version':version,'amount_minor':100}).status_code==422
+
+def item_body(item):
+    return {**item['details'],**{key:item[key] for key in ['donation_id','category','item_type','title','location','cause_id','listed_online']}}
+
+def test_item_correction_replaces_photos_and_cause_without_reopening_sold_stock(client):
+    bag=sorting_bag(client)
+    causes=bootstrap(client)['causes']
+    item=create_item(client,bag,'Re-sale',item_type='book',title='Typo',author='Writer',condition='good',location='Books',cause_id=causes[0]['id']).json()
+    sale=client.post(f'/api/items/{item["id"]}/sale',json={'version':item['version'],'amount_minor':1800}).json()
+    item=next(i for i in bootstrap(client)['items'] if i['id']==item['id'])
+    photos=upload_photos(client,bag,3)
+    body={**item_body(item),'title':'Corrected title','cause_id':causes[1]['id'],'photos':photos}
+    response=client.put(f'/api/items/{item["id"]}',params={'version':item['version']},json=body)
+    assert response.status_code==200,response.text
+    updated=response.json()
+    assert updated['status']=='sold' and not updated['listed_online']
+    assert updated['reference']==item['reference'] and updated['donation_id']==bag['id']
+    assert updated['details']['photos']==photos and updated['title']=='Corrected title'
+    assert next(s for s in bootstrap(client)['sales'] if s['id']==sale['id'])['cause_id']==causes[1]['id']
+    assert client.put(f'/api/items/{item["id"]}',params={'version':item['version']},json=body).status_code==409
+    other=sorting_bag(client)
+    assert client.put(f'/api/items/{item["id"]}',params={'version':updated['version']},json={**body,'donation_id':other['id']}).status_code==409
+    assert client.put(f'/api/items/{item["id"]}',params={'version':updated['version']},json={**body,'photos':photos[:2]}).status_code==422
+    with module.SessionLocal() as db:
+        assert all(db.get(module.ItemPhoto,name).item_id==item['id'] for name in photos)
+        assert db.get(module.ItemPhoto,item['details']['photos'][0]).item_id==item['id']
+        history=list(db.scalars(select(module.Event).where(module.Event.entity_id==item['id'])))
+        assert any(e.snapshot.get('title')=='Typo' for e in history)
+        assert any(e.snapshot.get('title')=='Corrected title' for e in history)
+
+def test_consent_is_explicit_repeat_donors_reused_and_withdrawal_is_audited(client):
+    assert client.post('/api/donations',json={'donor':{'name':'No channel','marketing_consent':True}}).status_code==422
+    bag=new_bag(client,False)
+    donor=next(d for d in bootstrap(client)['donors'] if d['id']==bag['donor_id'])
+    assert not donor['marketing_consent']
+    before=len(bootstrap(client)['donors'])
+    details={'name':'Correct Name','email':'person@example.com','contact_preference':'email','marketing_consent':True,'nationality':'Emirati'}
+    repeat=client.post('/api/donations',json={'donor_id':donor['id'],'donor_version':donor['version'],'donor':details})
+    assert repeat.status_code==201,repeat.text
+    assert repeat.json()['donor_id']==donor['id']
+    assert len(bootstrap(client)['donors'])==before
+    current=next(d for d in bootstrap(client)['donors'] if d['id']==donor['id'])
+    assert current['marketing_consent'] and current['consent_updated_at']
+    assert client.put(f'/api/donors/{donor["id"]}',params={'version':donor['version']},json=details).status_code==409
+    withdrawal=client.put(f'/api/donors/{donor["id"]}',params={'version':current['version']},json={**details,'marketing_consent':False})
+    assert withdrawal.status_code==200 and not withdrawal.json()['marketing_consent']
+    assert any('withdrawn' in e['message'] for e in bootstrap(client)['events'] if e['entity_id']==donor['id'])
+    assert client.post('/api/donations',json={'anonymous':True,'donor':details,'donor_id':donor['id'],'donor_version':current['version']}).json()['donor_id'] is None
+
+def test_bag_customer_cause_and_sale_corrections_preserve_identity_and_check_versions(client):
+    bag=sorting_bag(client)
+    edited=client.put(f'/api/donations/{bag["id"]}',params={'version':bag['version']},json={'location':'Store','notes':'Corrected note'})
+    assert edited.status_code==200 and edited.json()['reference']==bag['reference']
+    assert edited.json()['status']=='sorting'
+    customer=client.post('/api/customers',json={'name':'Typo'}).json()
+    cause=client.post('/api/causes',json={'name':'Typo cause'}).json()
+    for path,row,body in [('customers',customer,{'name':'Correct Customer','email':'new@example.com'}),('causes',cause,{'name':'Correct Cause','description':'Updated'})]:
+        response=client.put(f'/api/{path}/{row["id"]}',params={'version':row['version']},json=body)
+        assert response.status_code==200,response.text
+        assert response.json()['id']==row['id']
+        assert client.put(f'/api/{path}/{row["id"]}',params={'version':row['version']},json=body).status_code==409
+    item=create_item(client,bag,'Re-sale',item_type='book',title='Book',author='Writer',condition='good',location='Shelf',cause_id=cause['id']).json()
+    sale=client.post(f'/api/items/{item["id"]}/sale',json={'version':item['version'],'amount_minor':1000}).json()
+    other=bootstrap(client)['causes'][0]
+    response=client.put(f'/api/sales/{sale["id"]}',params={'version':sale['version']},json={'amount_minor':2200,'customer_id':customer['id'],'cause_id':other['id']})
+    assert response.status_code==200,response.text
+    assert response.json()['amount_minor']==2200 and response.json()['currency']=='AED'
+    item=next(i for i in bootstrap(client)['items'] if i['id']==item['id'])
+    assert item['status']=='sold' and item['cause_id']==other['id']
+
+def test_additive_migration_preserves_legacy_records_and_never_infers_consent(client):
+    # Exercise the same migration against a pre-consent database structure.
+    schema=module.engine.get_execution_options().get('schema_translate_map',{}).get(None)
+    table=f'{module.engine.dialect.identifier_preparer.quote(schema)}.donors' if schema else 'donors'
+    with module.engine.begin() as connection:
+        before=list(connection.execute(text(f'SELECT id, name FROM {table}')))
+        connection.execute(text(f'ALTER TABLE {table} DROP COLUMN marketing_consent'))
+        connection.execute(text(f'ALTER TABLE {table} DROP COLUMN consent_updated_at'))
+        connection.execute(text(f'ALTER TABLE {table} DROP COLUMN version'))
+    module.migrate_records()
+    module.migrate_records()  # Repeated startup is safe.
+    with module.SessionLocal() as db:
+        assert [(d.id,d.name) for d in db.scalars(select(module.Donor))]==[tuple(r) for r in before]
+        assert all(not d.marketing_consent and d.version==1 for d in db.scalars(select(module.Donor)))
+
+def read_workbook(content):
+    ns={'m':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    with ZipFile(io.BytesIO(content)) as archive:
+        assert archive.testzip() is None
+        strings=[''.join(node.itertext()) for node in ET.fromstring(archive.read('xl/sharedStrings.xml')).findall('m:si',ns)]
+        sheets=ET.fromstring(archive.read('xl/workbook.xml')).findall('m:sheets/m:sheet',ns)
+        result={}
+        for index,sheet in enumerate(sheets,1):
+            root=ET.fromstring(archive.read(f'xl/worksheets/sheet{index}.xml'))
+            assert not root.findall('.//m:f',ns), 'People data must never become spreadsheet formulas.'
+            rows=[]
+            for row in root.findall('m:sheetData/m:row',ns):
+                values=[]
+                for cell in row.findall('m:c',ns):
+                    value=cell.findtext('m:v',default='',namespaces=ns)
+                    kind=cell.get('t')
+                    value=strings[int(value)] if kind=='s' else value=='1' if kind=='b' else float(value) if value else None
+                    values.append((cell.get('r'),value))
+                rows.append(dict(values))
+            result[sheet.get('name')]=(root,rows)
+        return result
+
+def test_people_excel_export_is_authenticated_editable_and_matches_people_metrics(client):
+    bag=client.post('/api/donations',json={'donor':{'name':'=1+1','email':'excel@example.com','phone':'+9710012345','nationality':'Emirati','contact_preference':'email','marketing_consent':True,'cause_ids':[bootstrap(client)['causes'][0]['id']]}}).json()
+    donor_id=bag['donor_id']
+    repeat=client.post('/api/donations',json={'donor_id':donor_id}).json()
+    create_item(client,bag)
+    create_item(client,bag,'Dispose')
+    create_item(client,repeat,'Clean')
+    customer=client.post('/api/customers',json={'name':'Offline customer','phone':'0012345'}).json()
+    values=dict(item_type='book',title='Export book',author='Writer',condition='good',location='Shelf',cause_id=bootstrap(client)['causes'][0]['id'])
+    item=create_item(client,bag,'Re-sale',**values).json()
+    client.post(f'/api/items/{item["id"]}/sale',json={'version':item['version'],'amount_minor':1725,'customer_id':customer['id']})
+    before=bootstrap(client)
+    response=client.get('/api/people/export.xlsx')
+    assert response.status_code==200,response.text
+    assert response.headers['content-type']=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    assert 'attachment;' in response.headers['content-disposition'] and '.xlsx' in response.headers['content-disposition']
+    assert response.headers['cache-control']=='no-store'
+    workbook=read_workbook(response.content)
+    assert list(workbook)==['Overview','Donors','Customers','Anonymous donations']
+    _,rows=workbook['Donors']
+    assert len(rows)==len(before['donors'])+1
+    exported=next(row for row in rows[1:] if list(row.values())[0]==donor_id)
+    values=list(exported.values())
+    assert values[2:9]==['=1+1','excel@example.com','+9710012345','Emirati','email',True,True]
+    assert isinstance(values[9],float)  # Typed, sortable Excel timestamp.
+    assert values[-2:]==[2,4]
+    assert list(next(row for row in workbook['Customers'][1][1:] if list(row.values())[0]==customer['id']).values())==[customer['id'],1.0,'Offline customer','','0012345',1.0,17.25]
+    overview={list(row.values())[0]:list(row.values())[1] for row in workbook['Overview'][1] if len(row)==2}
+    assert overview['Known donors']==len(before['donors'])
+    assert overview['Donors with consent and contact details']==1
+    assert overview['Donations with current marketing permission']==2
+    assert len(workbook['Anonymous donations'][1])-1==sum(b['anonymous'] or not b['donor_id'] for b in before['donations'])
+    ns={'m':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    assert workbook['Donors'][0].find('m:sheetViews/m:sheetView/m:pane',ns).get('state')=='frozen'
+    assert len(bootstrap(client)['donors'])==len(before['donors'])
+    client.post('/api/logout')
+    assert client.get('/api/people/export.xlsx').status_code==401
+
+def test_empty_people_workbook_has_headers_and_no_errors():
+    from backend.people_export import people_workbook
+    workbook=read_workbook(people_workbook([],[],[],[],[],[],module.now()))
+    assert all(len(workbook[name][1])==1 for name in ['Donors','Customers','Anonymous donations'])

@@ -9,4 +9,7 @@ backend/*.db
 docs/screenshots
 android
 ios
+artifacts/backups
+.guide-build
+artifacts/user-guides
 pytest-cache-*

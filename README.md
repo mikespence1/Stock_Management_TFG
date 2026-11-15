@@ -10,6 +10,13 @@ The web workspace and Android app use the official Thrift for Good logo and webs
 
 **Other locations:** use [the NetBird PC and Android setup guide](docs/NETBIRD.md) for a private VPN pilot that keeps the application, PostgreSQL, photos and item history on this PC.
 
+## User guides
+
+- Setup, configuration, mobile installation and database backups: [Word guide](artifacts/user-guides/Thrift_for_Good_Setup_and_Access_Guide.docx) ? [PowerPoint guide](artifacts/user-guides/Thrift_for_Good_Setup_and_Access_Guide.pptx).
+- Everyday staff tasks with screenshots: [Word guide](artifacts/user-guides/Thrift_for_Good_Staff_User_Guide.docx) ? [PowerPoint guide](artifacts/user-guides/Thrift_for_Good_Staff_User_Guide.pptx).
+
+The guides contain clickable reference links. In Word, hold Ctrl and click. In PowerPoint, click in Slide Show mode or right-click and choose Open Hyperlink while editing. Links labelled ?server PC? use localhost and require the application to be running on that PC. Other devices must use the server address supplied by the manager.
+
 ## Start the application
 
 Docker Desktop must be running. From this project folder in PowerShell:
@@ -37,15 +44,21 @@ The app includes **60 items**: 10 resale clothing items, 10 resale books, and 10
 
 ## Try the full workflow
 
-1. In **Donations**, choose **Receive donation**. Enter donor details, or select **Anonymous donation**. No contact is the default. Email or phone contact requires the matching contact detail.
-2. Save the bag. In its details, choose **Print QR label**. Print it or save the browser print output as PDF. Attach the label to the bag, then choose **Send to warehouse**.
-3. At the warehouse, scan the bag or enter its reference. Choose **Receive & start sorting**.
-4. In the Sorting Room, tap a top card to choose a bag, then **Scan this bag**. Scanning an incoming bag receives it at the warehouse. The selected bag stays visible while you sort; a mismatched bag scan is rejected. **Open manually** is available when a label cannot be scanned.
+1. Once a bag arrives, in **Donations**, choose **Receive donation**. Enter donor details, select an existing donor, or choose **Anonymous donation**. Marketing consent is optional and unchecked for new donors; choosing email or phone requires the matching contact detail. Contact details alone do not grant consent.
+2. Save the bag. In its details, choose **Print QR label**. Print it or save the browser print output as PDF. Attach the label to the bag. It is ready for sorting immediately; there is no dispatch or in-transit step.
+3. In Warehouse, scan the bag or enter its reference, then choose **Sort an item**.
+4. In the Sorting Room, tap a top card to choose a bag, then **Scan this bag**. The selected bag stays visible while you sort; a mismatched bag scan is rejected. **Open manually** is available when a label cannot be scanned.
 5. Choose **Sort next item** for every physical item. Clothes are selected by default. **Re-sale permits only clothes, books, ornaments and jewellery.** Shoes, hats, toys, homeware, bags and Other remain available for Donate, Mend, Clean and Dispose. Select the category and complete its form. Use **Take photos** to capture up to three views; each shot saves automatically to PostgreSQL. The Android app opens the native camera directly; the web version uses live preview or its Device camera fallback. Print and attach the item's own QR label. All items and photos retain a link to their original donation and donor.
 6. Finish the bag after all its physical contents have been recorded. A completed bag does not close its items; they continue independently.
 7. Scan an item later to move it, sell it, confirm donation, send/receive repairs or cleaning, re-sort it, or confirm disposal. Every successful processing step records the staff member and timestamp. In **People → Donors**, tap a donor to see all their bags, items and photos.
 
 See [the staff process](docs/WORKFLOW.md) for the route map and QR rules. The same process guide is built into the app.
+
+All resale items require exactly **three different photos** before an item record can be saved, marked online, sold or exported as a Shopify draft. Photos are optional for all other routes, with a maximum of three. Existing records with fewer photos are retained; use **Edit item** to supply the missing photos.
+
+Use **Edit item** / **Edit bag** in record details, **Edit donor** / **Edit customer** in People, **Edit cause** in Causes, and **Edit sale** in a sold item's details. Corrections retain IDs, QR labels and workflow status, record the staff member and changes, and reject stale versions. Correcting a sold item's cause also updates its recorded sale allocation.
+
+**People → Impact dashboard** shows donations and items by donor, donor nationalities, opted-in donors with contact details, and anonymous donations. Select a nationality or rank by donations/items, then open a donor to inspect their records. Anonymous bags are counted separately because their donors cannot be identified. Consent can be granted or withdrawn at intake or through Edit donor. No marketing messages are sent by this prototype.
 
 ## Tablets, mobiles and iPads
 
@@ -122,3 +135,5 @@ frontend/src/styles.css  Responsive compact tablet/mobile design
 compose.yaml             PostgreSQL and application services
 docs/                    Staff workflow and integration design
 ```
+
+In **People**, choose **Export People to Excel** to download an editable `.xlsx` snapshot of all People records, regardless of filters. The workbook contains an overview, donors (contact details, nationality, consent, preferred causes, donation/item counts, IDs and versions), customers (purchase counts and AED totals) and anonymous donations. It includes sorting/filtering and preserves phone numbers as text. Excel edits stay offline; there is no import back into the database.

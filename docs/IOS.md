@@ -70,7 +70,7 @@ Use fictional test records:
 1. Turn Wi-Fi off and connect NetBird over mobile data.
 2. Receive a donation on the iPhone. Refresh the PC and confirm it appears.
 3. Print its bag QR label using the iOS print dialog.
-4. Send/receive the bag at the warehouse and scan it from the Sorting Room.
+4. Record bags only after arrival. Scan the bag from **Being sorted** in the Sorting Room; there is no send/receive step.
 5. Sort a clothing item. Take three photos; each accepted shot saves against the selected bag.
 6. Save the item and check its photos and donor/bag links on the PC.
 7. Print and scan the individual item's label.
@@ -79,6 +79,8 @@ Use fictional test records:
 10. Test iPad portrait/landscape and print presentation. Reopen the app and check the saved connection.
 
 Server sessions expire, so staff may need to sign in again. Unsaved form drafts do not survive iOS terminating the app. Already-uploaded photos remain attached to the original bag until the item is saved.
+
+The iOS app loads the same PC-hosted workspace as the browser and Android. Reopen the workspace after updating the server to access **Edit item**, **Edit bag**, donor/customer/cause/sale corrections, marketing consent and **People → Impact dashboard**. These shared changes do not require a new signed iOS build. All resale types require three photos before saving, sale, online marking or Shopify draft export; photos are optional for all other routes, up to three. Remove a thumbnail in **Edit item** to capture a replacement. Corrections preserve the original record ID, QR and workflow status. Marketing consent is optional and separate from supplying contact details; anonymous donations cannot opt in.
 
 ## GitHub build checks without your own Mac
 
@@ -127,3 +129,5 @@ After shared frontend changes, rebuild the PC image with docker compose up -d --
 Opening the committed Xcode project requires no third-party generator. If source membership changes, install the xcodeproj Ruby gem (version 1.28.1) and run ruby scripts/generate_ios_project.rb. Windows developers can use ios/project-tools.Dockerfile to run that generator. It does not manage signing.
 
 References: [Apple distribution](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases), [free Personal Team testing](https://developer.apple.com/help/account/basics/about-your-developer-account), [preparing distribution](https://developer.apple.com/documentation/xcode/preparing-your-app-for-distribution), [TestFlight](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/), [registered devices](https://developer.apple.com/help/account/devices/devices-overview/), [membership fee waiver](https://developer.apple.com/support/membership-fee-waiver/), [local-network ATS exceptions](https://developer.apple.com/documentation/bundleresources/information-property-list/nsapptransportsecurity/nsallowslocalnetworking).
+
+**People → Export People to Excel** downloads the workbook through the existing iOS share sheet. Save it to Files or open it in Excel. Workbook edits do not update PC records.

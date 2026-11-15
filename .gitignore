@@ -20,6 +20,8 @@ android/*.jks
 *.keystore
 artifacts/*.apk
 artifacts/*.sha256
+artifacts/backups/
+.guide-build/
 ios/.build/
 ios/DerivedData/
 ios/TestResults.xcresult/
@@ -31,3 +33,5 @@ ios/build/
 *.xcarchive/
 *.p12
 *.mobileprovision
+# Microsoft Office temporary lock files
+~$*

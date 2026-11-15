@@ -8,3 +8,4 @@ qrcode==8.2
 pillow==12.3.0
 httpx==0.28.1
 pytest==9.2.0
+XlsxWriter==3.3.1

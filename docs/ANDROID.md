@@ -24,8 +24,8 @@ You can change the PC address later using the native **Server** button. The app 
 
 1. In **Donations**, receive a named or anonymous donation on the phone. Confirm that it appears immediately on the PC after refreshing.
 2. Print its bag QR label using Android’s Print / Save PDF dialog. Save a PDF or use a configured network printer; attach the label to the physical bag.
-3. Send the bag to the warehouse. In the Sorting Room, tap **On the way**, choose the bag and tap **Scan this bag**. Android requests camera permission the first time. Scan the printed QR; the app receives the bag at the warehouse.
-4. Choose **Sort an item**. Clothes are the default. Tap **Take photos** to launch the native camera, take a shot and confirm it. The image saves automatically against the original bag. Repeat for three clothing photos.
+3. Record the bag only once it arrives. In the Sorting Room, tap **Being sorted**, choose the bag and tap **Scan this bag**. Android requests camera permission the first time. Scan the printed QR; the bag is already ready for sorting.
+4. Choose **Sort an item**. Clothes are the default. Tap **Take photos** to launch the native camera, take a shot and confirm it. The image saves automatically against the original bag. Every resale type requires exactly three photos; photos are optional for all other routes, up to three.
 5. Complete the clothing fields and save. The new item and all three photos should be visible on the PC and under **People → Donors → the donor → the original bag**.
 6. Print the item QR and add a second item to the same bag. Resale allows **only clothes, books, ornaments and jewellery**. Toys, shoes, hats, homeware, bags and Other remain available for the other routes, but cannot be sold or exported as resale.
 7. Finish the bag after recording all contents. Scan an item QR to move it, send/return service work, record a customer-linked sale, donate it or dispose of it. Verify its journey and the original donor/bag link on both devices.
@@ -33,6 +33,8 @@ You can change the PC address later using the native **Server** button. The app 
 Native camera capture and QR scanning work over the configured local HTTP connection; they do not depend on browser getUserMedia or Google Play services. The QR decoder is bundled in the APK. The optional photo library uses Android’s document picker. Photos are compressed and rotated correctly before saving to the PC database.
 
 The APK loads the workspace from the PC, so normal frontend/backend changes are available after refreshing the app. The native app itself needs reinstalling only when its Android code changes.
+
+Record corrections, donor marketing consent and **People → Impact dashboard** use this shared workspace. Close and reopen the workspace after the server update; no new APK is required for record editing, consent or the dashboard. The Excel download described below needs the updated APK. Use **Edit item** to correct details, reallocate a cause or remove a thumbnail and capture its replacement. The maximum remains three photos. Original IDs, labels and sold/service status are preserved. Donor consent is optional, requires a chosen contact method and can be withdrawn in **Edit donor**. Anonymous donations never have contact permission.
 
 ## PC connection setup
 
@@ -76,3 +78,5 @@ The flag accepts the [Android SDK license](https://developer.android.com/studio/
 After rebuilding the APK, run `docker compose up -d --build` to update the download hosted on the PC.
 
 References: [Android camera intents](https://developer.android.com/media/camera/camera-deprecated/photobasics), [ZXing Android Embedded](https://github.com/journeyapps/zxing-android-embedded), [Android print framework](https://developer.android.com/training/printing/html-docs).
+
+**People → Export People to Excel** downloads all People records as an editable workbook. Android version `0.4.0-test` (version code 4) adds authenticated Excel downloads and an Open/share chooser. Install the rebuilt APK from `/android` to use this download inside the native app; existing APKs can use the PC/browser export. Workbook edits stay offline and are not imported.

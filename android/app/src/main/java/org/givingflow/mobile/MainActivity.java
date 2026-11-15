@@ -46,6 +46,7 @@ import com.google.zxing.integration.android.IntentResult;
 import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -150,7 +151,46 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        web.setDownloadListener((url,userAgent,disposition,mimeType,length)->downloadPeople(url));
         web.loadUrl(server+"/");
+    }
+
+    private void downloadPeople(String url) {
+        if(!trustedPage()||!ServerPolicy.sameOrigin(server,url)||!"/api/people/export.xlsx".equals(Uri.parse(url).getPath()))return;
+        final String cookie=CookieManager.getInstance().getCookie(url);
+        Toast.makeText(this,"Downloading People workbook…",Toast.LENGTH_SHORT).show();
+        worker.execute(()->{
+            HttpURLConnection http=null;
+            File destination=null;
+            try {
+                http=(HttpURLConnection)new URL(url).openConnection();
+                http.setConnectTimeout(10000);http.setReadTimeout(30000);http.setInstanceFollowRedirects(false);
+                if(cookie!=null)http.setRequestProperty("Cookie",cookie);
+                if(http.getResponseCode()!=200)throw new Exception("Could not download. Sign in again and retry.");
+                String mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                if(http.getContentType()==null||!http.getContentType().startsWith(mime))throw new Exception("The PC did not return an Excel workbook.");
+                File folder=new File(getCacheDir(),"exports/"+System.currentTimeMillis());
+                if(!folder.mkdirs())throw new Exception("Could not prepare the download.");
+                destination=new File(folder,"ThriftForGood-People.xlsx");
+                try(InputStream input=http.getInputStream();FileOutputStream output=new FileOutputStream(destination)){
+                    byte[] buffer=new byte[8192];int count,total=0;
+                    while((count=input.read(buffer))!=-1){total+=count;if(total>20*1024*1024)throw new Exception("The workbook is too large to open here. Export it from the PC browser.");output.write(buffer,0,count);}
+                }
+                final File workbook=destination;
+                runOnUiThread(()->{
+                    if(isFinishing()||!ServerPolicy.sameOrigin(server,url))return;
+                    try {
+                        Uri uri=FileProvider.getUriForFile(this,getPackageName()+".files",workbook);
+                        Intent share=new Intent(Intent.ACTION_SEND);share.setType(mime);share.putExtra(Intent.EXTRA_STREAM,uri);
+                        share.setClipData(ClipData.newRawUri("People workbook",uri));share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(share,"Open or save People workbook"));
+                    }catch(Exception error){Toast.makeText(this,"Install an app that can open or save Excel workbooks.",Toast.LENGTH_LONG).show();}
+                });
+            }catch(Exception error){
+                if(destination!=null)destination.delete();
+                runOnUiThread(()->{if(!isFinishing())Toast.makeText(this,error.getMessage()==null?"Download failed. Please retry.":error.getMessage(),Toast.LENGTH_LONG).show();});
+            }finally{if(http!=null)http.disconnect();}
+        });
     }
 
     private boolean trustedPage(){return web!=null&&ServerPolicy.sameOrigin(server,web.getUrl());}

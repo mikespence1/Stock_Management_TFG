@@ -33,7 +33,7 @@ The market is local and **AED is the only currency**. Sale amounts are integer f
 
 1. Configure a Shopify store domain, a server-side secret access token and a supported Admin GraphQL API version through environment variables. Never place a Shopify token in React, labels or source control.
 2. Map the export to a draft product and one physical inventory unit. Use the local item's immutable reference as the SKU, with an additional local-ID metafield if needed. Keep the remote product/variant/inventory IDs locally so retries update the same product instead of creating duplicates.
-3. Set a price and upload the three clothing photos with Shopify's staged media flow. Upload from the backend after staff authentication, without exposing donor records or making all uploaded files public.
+3. Set a price and upload all three resale photos with Shopify's staged media flow. Every resale type requires exactly three photos before creation, online marking, sale or export. Upload from the backend after staff authentication, without exposing donor records or making all uploaded files public.
 4. Staff review the draft before publishing it. Keep the manual `listed_online` marker clearly separate from a confirmed remote publishing status.
 5. Verify Shopify webhook signatures and record each webhook ID once. On a paid order, create the local sale with the Shopify order/line ID and the correct currency, then remove local availability. Do not depend on the manual listing marker for inventory control.
 6. Handle the shop checkout competing with an online sale by reserving/locking the physical unit and synchronizing both sides. Add retries, reconciliation, webhook idempotency, cancellations and returns before turning live selling on.
