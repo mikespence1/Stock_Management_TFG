@@ -44,6 +44,19 @@ The app includes **60 items**: 10 resale clothing items, 10 resale books, and 10
 
 ## Try the full workflow
 
+Administrators can remove dummy or mistaken inventory records using **Delete item (admin)** in item details. Each deletion requires a separate admin password, the exact item reference, a reason and explicit confirmation. A linked sale and attached database photos are removed; the bag, donor and audit trail remain. Sales and inventory totals update accordingly. See [the staff workflow](docs/WORKFLOW.md#delete-a-dummy-or-mistaken-inventory-record).
+
+Deletion is disabled on a new installation until an administrator configures the password locally. With the Docker app running, run the following from PowerShell and enter the password when prompted:
+
+```powershell
+.\scripts\Set-AdminDeletionPassword.ps1
+docker compose up -d app
+```
+
+The script writes only a salted PBKDF2 hash to the ignored `.env` file as `ADMIN_DELETE_PASSWORD_HASH`. The password travels to the hash command through standard input and is never included in source code or the browser bundle. Keep the deletion password with the authorised administrators. Changing it takes effect after recreating the app container; it does not change the staff sign-in password.
+
+QR previews are centred. A single label prints centrally on A4 paper; batch printing fits six compact 76 × 78 mm labels per sheet, each with a 42 mm black-and-white QR code. Print at actual size (100%). The same layout is used by the web, Android and iOS apps.
+
 1. Once a bag arrives, in **Donations**, choose **Receive donation**. Enter donor details, select an existing donor, or choose **Anonymous donation**. Marketing consent is optional and unchecked for new donors; choosing email or phone requires the matching contact detail. Contact details alone do not grant consent.
 2. Save the bag. In its details, choose **Print QR label**. Print it or save the browser print output as PDF. Attach the label to the bag. It is ready for sorting immediately; there is no dispatch or in-transit step.
 3. In Warehouse, scan the bag or enter its reference, then choose **Sort an item**.

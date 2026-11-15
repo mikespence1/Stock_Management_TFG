@@ -3,6 +3,37 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { App } from './main';
 
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+
+test.each(['web','GivingFlowAndroid','GivingFlowIOS'])('%s inventory deletion submits admin approval and removes the selected record',async(platform)=>{
+ const {data,fetchMock}=setup();
+ const enabledData=data as typeof data & {admin_delete_enabled:boolean};
+ enabledData.admin_delete_enabled=true;
+ const item={id:'dummy-item',reference:'ITM-DUMMY',title:'Dummy record',version:2,status:'available',category:'Re-sale',item_type:'clothing',donation_id:'bag-1',details:{condition:'good'},location:'Shelf 1',created_at:'2026-11-14T00:00:00Z'};
+ data.items.push(item);
+ if(platform!=='web')vi.stubGlobal(platform,{takePhoto:vi.fn(),scanQr:vi.fn(),printLabels:vi.fn()});
+ fetchMock.mockImplementation(async(input:any,options:any)=>{
+   if(options?.method==='DELETE'){
+    expect(String(input)).toBe('/api/items/dummy-item');
+    expect(JSON.parse(options.body)).toEqual({password:'test-secret',reference:'ITM-DUMMY',version:2,reason:'Test record'});
+    data.items=[];
+    return {ok:true,json:async()=>({deleted:true,id:item.id,reference:item.reference})};
+   }
+   return {ok:true,json:async()=>structuredClone(data)};
+ });
+ render(<App/>);
+ fireEvent.click(await screen.findByRole('button',{name:/Dummy record/}));
+ fireEvent.click(screen.getByRole('button',{name:'Delete item (admin)'}));
+ const form=screen.getByRole('dialog',{name:'Delete inventory item'});
+ fireEvent.change(within(form).getByLabelText('Reason for deletion *'),{target:{value:'Test record'}});
+ fireEvent.change(within(form).getByLabelText('Type ITM-DUMMY to confirm *'),{target:{value:'ITM-DUMMY'}});
+ fireEvent.change(within(form).getByLabelText('Admin deletion password *'),{target:{value:'test-secret'}});
+ fireEvent.click(within(form).getByRole('checkbox'));
+ fireEvent.click(within(form).getByRole('button',{name:'Permanently delete item'}));
+ await screen.findByRole('status');
+ expect(screen.queryByRole('dialog',{name:'Delete inventory item'})).toBeNull();
+ expect(screen.queryByText('Dummy record')).toBeNull();
+ expect(data.donations).toHaveLength(2);
+});
 function setup(){
  const data={staff:{name:'Test Staff',email:'staff@example.com'},database:'postgresql',donors:[{id:'donor-1',version:1,name:'Original Donor',contact_preference:'none',marketing_consent:false,cause_ids:[]}],customers:[],items:[] as any[],sales:[] as any[],causes:[{id:'cause-1',name:'Community Fund'}],events:[],donations:[{id:'bag-1',reference:'BAG-ORIGINAL',donor_id:'donor-1',status:'sorting',created_at:'2026-11-14T00:00:00Z',location:'Warehouse'},{id:'bag-2',reference:'BAG-SECOND',donor_id:'donor-1',status:'sorting',created_at:'2026-11-14T01:00:00Z',location:'Warehouse'}]};
  const fetchMock=vi.fn(async(input:any,options:any)=>{

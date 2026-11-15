@@ -20,6 +20,7 @@ services:
       DATABASE_URL: postgresql+psycopg://givingflow:${POSTGRES_PASSWORD}@db:5432/givingflow
       STAFF_EMAIL: ${STAFF_EMAIL:-staff@givingflow.local}
       STAFF_PASSWORD: ${STAFF_PASSWORD:?Set STAFF_PASSWORD in .env}
+      ADMIN_DELETE_PASSWORD_HASH: ${ADMIN_DELETE_PASSWORD_HASH:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes: ["uploads:/app/backend/uploads"]

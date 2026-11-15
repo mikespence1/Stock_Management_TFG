@@ -26,9 +26,13 @@ def client(monkeypatch):
     else:
         root_engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
         engine = root_engine
+        with engine.connect() as conn:
+            conn.execute(text('PRAGMA foreign_keys=ON'))
     monkeypatch.setattr(module, 'engine', engine)
     monkeypatch.setattr(module, 'SessionLocal', sessionmaker(engine, expire_on_commit=False))
     module.login_attempts.clear()
+    module.admin_delete_attempts.clear()
+    monkeypatch.setenv('ADMIN_DELETE_PASSWORD_HASH', module.password_hash('test-admin-delete-only'))
     monkeypatch.setenv('STAFF_EMAIL', 'staff@givingflow.local')
     monkeypatch.setenv('STAFF_PASSWORD', 'GivingFlow123!')
     with TestClient(module.app) as c:
@@ -41,6 +45,90 @@ def client(monkeypatch):
 
 def bootstrap(client):
     return client.get('/api/bootstrap').json()
+
+def deletion_values(item, **changes):
+    return {'password': 'test-admin-delete-only', 'reference': item['reference'], 'version': item['version'], 'reason': 'Created in error', **changes}
+
+def delete_record(client, item, **changes):
+    return client.request('DELETE', f'/api/items/{item["id"]}', json=deletion_values(item, **changes))
+
+def test_inventory_deletion_requires_admin_password_and_staff_session(client):
+    item = create_item(client, sorting_bag(client)).json()
+    assert bootstrap(client)['admin_delete_enabled'] is True
+    assert delete_record(client, item, password='wrong-password').status_code == 403
+    assert any(row['id'] == item['id'] for row in bootstrap(client)['items'])
+    response = client.request('DELETE', f'/api/items/{item["id"]}', headers={'origin': 'https://another-site.example'}, json=deletion_values(item))
+    assert response.status_code == 403
+    client.post('/api/logout')
+    assert delete_record(client, item).status_code == 401
+
+def test_inventory_deletion_fails_closed_without_configuration(client, monkeypatch):
+    item = create_item(client, sorting_bag(client)).json()
+    monkeypatch.delenv('ADMIN_DELETE_PASSWORD_HASH')
+    assert bootstrap(client)['admin_delete_enabled'] is False
+    assert delete_record(client, item).status_code == 503
+    assert any(row['id'] == item['id'] for row in bootstrap(client)['items'])
+
+def test_inventory_deletion_requires_current_reference_version_and_reason(client):
+    item = create_item(client, sorting_bag(client)).json()
+    assert delete_record(client, item, reference='ITM-WRONG').status_code == 422
+    assert delete_record(client, item, version=item['version'] + 1).status_code == 409
+    assert delete_record(client, item, reason='   ').status_code == 422
+    assert any(row['id'] == item['id'] for row in bootstrap(client)['items'])
+
+def test_admin_deletion_removes_linked_rows_and_keeps_bag_donor_and_audit(client):
+    bag = new_bag(client, False)
+    cause_id = bootstrap(client)['causes'][0]['id']
+    item = create_item(client, bag, 'Re-sale', item_type='book', title='Dummy book', author='Example', condition='good', location='Shelf 1', cause_id=cause_id).json()
+    other = create_item(client, bag, photos=upload_photos(client, bag)).json()
+    response = client.post(f'/api/items/{item["id"]}/sale', json={'version': item['version'], 'amount_minor': 1000, 'currency': 'AED'})
+    assert response.status_code == 201, response.text
+    before = bootstrap(client)
+    item = next(row for row in before['items'] if row['id'] == item['id'])
+    sale = next(row for row in before['sales'] if row['item_id'] == item['id'])
+    bag_version = next(row['version'] for row in before['donations'] if row['id'] == bag['id'])
+    response = delete_record(client, item)
+    assert response.status_code == 200, response.text
+    after = bootstrap(client)
+    assert all(row['id'] != item['id'] for row in after['items'])
+    assert all(row['item_id'] != item['id'] for row in after['sales'])
+    assert any(row['id'] == other['id'] for row in after['items'])
+    assert any(row['id'] == bag['donor_id'] for row in after['donors'])
+    assert next(row['version'] for row in after['donations'] if row['id'] == bag['id']) > bag_version
+    audit = next(row for row in after['events'] if row['entity_id'] == item['id'] and 'deleted' in row['message'])
+    assert audit['snapshot']['reference'] == item['reference']
+    assert 'Created in error' in audit['message'] and 'Admin deletion' in audit['actor']
+    assert any(row['entity_id'] == sale['id'] and row['snapshot']['amount_minor'] == 1000 for row in after['events'])
+    assert 'test-admin-delete-only' not in str(after)
+    for filename in item['details']['photos']:
+        assert client.get('/api/photos/' + filename).status_code == 404
+    assert client.get('/api/photos/' + other['details']['photos'][0]).status_code == 200
+    assert client.get('/api/resolve', params={'code': item['reference']}).status_code == 404
+    assert client.get('/api/labels', params={'ids': item['id']}).status_code == 404
+    assert delete_record(client, item).status_code == 404
+
+def test_admin_password_attempts_are_limited_and_expire(client):
+    item = create_item(client, sorting_bag(client)).json()
+    for _ in range(5):
+        assert delete_record(client, item, password='wrong').status_code == 403
+    assert delete_record(client, item).status_code == 429
+    for key in module.admin_delete_attempts:
+        module.admin_delete_attempts[key] = [module.now() - module.timedelta(minutes=11)]
+    assert delete_record(client, item).status_code == 200
+
+def test_labels_have_a_compact_centred_single_and_batch_layout(client):
+    bag = new_bag(client)
+    single = client.get('/api/labels', params={'ids': bag['id']})
+    assert single.status_code == 200
+    assert '<main class="labels single">' in single.text
+    assert 'width:42mm' in single.text and 'height:78mm' in single.text
+    assert 'align-content:center' in single.text and 'justify-content:center' in single.text
+    assert 'viewBox=' in single.text and 'image/png' not in single.text
+    assert '100%' in single.text and bag['reference'] in single.text
+    batch = client.get('/api/labels', params={'ids': ','.join([bag['id']] * 6)})
+    assert '<main class="labels">' in batch.text
+    assert batch.text.count('<article class="qr-label"') == 6
+    assert 'repeat(2,76mm)' in batch.text
 
 def new_bag(client, anonymous=True):
     r = client.post('/api/donations', json={'anonymous':anonymous, 'donor': None if anonymous else {'name':'Test Person','email':'person@example.com','contact_preference':'email'}})

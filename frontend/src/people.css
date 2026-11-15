@@ -27,3 +27,5 @@
 .dashboard-empty{padding:20px}.cause-card>.button{margin-top:14px}
 @media(max-width:1050px){.people-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.people-charts{grid-template-columns:1fr}}
 @media(max-width:600px){.people-kpi{padding:16px}.people-kpi strong{font-size:26px}.people-charts>.panel{padding:18px}.chart-legend{font-size:11px}.people-dashboard .filter-bar{flex-wrap:wrap}.people-dashboard .filter-bar>input{flex-basis:100%}.people-dashboard .filter-bar select{flex:1;min-width:120px}.people-tabs button{padding:14px 12px}.consent-card{align-items:flex-start}}
+
+.button.danger{background:#b42318;color:#fff;border:1px solid #b42318}.button.danger:hover:not(:disabled){background:#8f1c13}.delete-item-action{margin:0 0 20px}.delete-warning{font-size:12px;line-height:1.8;margin-bottom:20px}.delete-acknowledgement{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.6;margin:16px 0}.delete-acknowledgement input{flex:none;margin-top:4px}

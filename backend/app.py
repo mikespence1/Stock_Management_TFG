@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, SecretStr, model_validator
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, create_engine, event, inspect, select, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.orm.exc import StaleDataError
@@ -295,6 +295,12 @@ class SaleEdit(BaseModel):
     customer_id: str | None = None
     cause_id: str | None = None
 
+class ItemDelete(BaseModel):
+    password: SecretStr = Field(min_length=1, max_length=256)
+    reference: str = Field(min_length=1, max_length=80)
+    version: int = Field(ge=1)
+    reason: str = Field(min_length=1, max_length=300)
+
 def obj(row):
     values = {c.name: getattr(row, c.name) for c in row.__table__.columns if c.name != 'password'}
     return {key: value.replace(tzinfo=timezone.utc) if isinstance(value, datetime) and value.tzinfo is None else value for key, value in values.items()}
@@ -436,6 +442,21 @@ class LoginInput(BaseModel):
     password: str
 
 login_attempts = {}
+admin_delete_attempts = {}
+
+def require_delete_admin(data: ItemDelete, request: Request, staff):
+    configured = os.getenv('ADMIN_DELETE_PASSWORD_HASH', '')
+    if not configured or '$' not in configured:
+        raise HTTPException(503, 'Admin deletion is not configured. Contact the administrator.')
+    key = (staff.id, request.client.host if request.client else 'local')
+    attempts = [t for t in admin_delete_attempts.get(key, []) if t > now() - timedelta(minutes=10)]
+    if len(attempts) >= 5:
+        raise HTTPException(429, 'Too many admin password attempts. Try again in ten minutes.')
+    candidate = password_hash(data.password.get_secret_value(), configured.split('$', 1)[0])
+    if not hmac.compare_digest(configured, candidate):
+        admin_delete_attempts[key] = attempts + [now()]
+        raise HTTPException(403, 'Admin password is incorrect. The item has not been deleted.')
+    admin_delete_attempts.pop(key, None)
 
 @app.post('/api/login')
 def login(data: LoginInput, request: Request, response: Response, db: Session = Depends(get_db)):
@@ -475,6 +496,7 @@ def bootstrap(staff=Depends(staff_user), db: Session = Depends(get_db)):
     result['staff'] = {'name': staff.name, 'email': staff.email}
     result['database'] = engine.dialect.name
     result['public_base_url'] = os.getenv('PUBLIC_BASE_URL', 'http://localhost:8000')
+    result['admin_delete_enabled'] = bool(os.getenv('ADMIN_DELETE_PASSWORD_HASH'))
     return result
 
 @app.get('/api/people/export.xlsx')
@@ -600,6 +622,33 @@ def edit_item(key: str, data: ItemInput, version: int, staff=Depends(staff_user)
     record(db, key, 'Item details/photos corrected · Original QR and workflow status retained', staff.name)
     commit(db)
     return obj(item)
+
+@app.delete('/api/items/{key}')
+def delete_item(key: str, data: ItemDelete, request: Request, staff=Depends(staff_user), db: Session = Depends(get_db)):
+    require_delete_admin(data, request, staff)
+    item = require(db, Item, key)
+    check_version(item, data.version)
+    if data.reference.strip() != item.reference:
+        raise HTTPException(422, 'Type the exact item reference to confirm deletion.')
+    reason = data.reason.strip()
+    if not reason:
+        raise HTTPException(422, 'Enter a reason for deleting this item.')
+    bag = require(db, Donation, item.donation_id)
+    actor = f'{staff.name} ({staff.email}) · Admin deletion'
+    record(db, item.id, f'Inventory item {item.reference} deleted · {reason}', actor)
+    sale = db.scalar(select(Sale).where(Sale.item_id == key))
+    if sale:
+        record(db, sale.id, f'Sale removed with deleted item {item.reference} · {reason}', actor)
+        db.delete(sale)
+    for saved_photo in db.scalars(select(ItemPhoto).where(ItemPhoto.item_id == key)):
+        db.delete(saved_photo)
+    # Flush dependent rows before deleting the item; all changes share one transaction.
+    db.flush()
+    bag.version += 1
+    record(db, bag.id, f'Admin deleted inventory item {item.reference} · {reason}', actor)
+    db.delete(item)
+    commit(db)
+    return {'deleted': True, 'id': key, 'reference': data.reference.strip()}
 
 @app.put('/api/items/{key}/classify')
 def classify(key: str, data: ItemInput, version: int, staff=Depends(staff_user), db: Session = Depends(get_db)):
@@ -789,8 +838,9 @@ def labels(ids: str, request: Request, staff=Depends(staff_user), db: Session = 
             raise HTTPException(404, 'Label record not found.')
         url = f'{base}/track/{row.id}'
         title = 'Donation bag' if isinstance(row, Donation) else row.title
-        cards.append(f'<article>{qr_svg(url)}<div><img class="print-brand" src="/brand/thrift-for-good-logo.png" alt="THRIFT FOR GOOD"/><p>{escape(title)}</p><strong>{escape(row.reference)}</strong><p>Scan to track · Staff sign-in required</p></div></article>')
-    return '<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>Thrift for Good labels</title><style>body{font:13px system-ui;margin:12mm}main{display:flex;flex-wrap:wrap;gap:5mm}article{width:85mm;min-height:40mm;border:1px dashed #aaa;display:flex;align-items:center;break-inside:avoid;padding:3mm;box-sizing:border-box}img.print-brand{width:40mm;max-width:100%;height:auto;margin-bottom:2mm}svg{width:36mm;height:36mm;flex-shrink:0}p{font-size:11px;margin:4px 0}strong{font-size:11px}button{padding:12px;margin:0 0 20px;cursor:pointer}@page{size:A4;margin:10mm}@media print{button{display:none}body{margin:0}}</style></head><body><button onclick="window.print()">Print labels / Save PDF</button><main>' + ''.join(cards) + '</main></body></html>'
+        cards.append(f'<article class="qr-label" aria-label="{escape(row.reference)}"><h2>THRIFT FOR GOOD</h2><p class="label-title">{escape(title)}</p>{qr_svg(url)}<strong>{escape(row.reference)}</strong><p class="label-help">Scan to track &middot; Staff sign-in required</p></article>')
+    from .labels import render_labels
+    return render_labels(cards)
 
 @app.get('/api/items/{key}/shopify-export')
 def shopify_export(key: str, staff=Depends(staff_user), db: Session = Depends(get_db)):

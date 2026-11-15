@@ -91,7 +91,7 @@ Mending and cleaning do not create replacement items. The original QR stays atta
 ## Printing and daily operation
 
 - Print the bag label immediately after intake, or reprint it from the bag details.
-- Print an item label after sorting. The current print template uses A4 sheets, dashed cut guides and approximately 36 mm QR codes. It is not aligned to a specific adhesive-sheet brand. Confirm printer scaling at 100%, scan a proof, and adjust the template before bulk printing.
+- Print an item label after sorting. The preview centres the label; a single label also prints centrally on A4 paper. Each black-and-white label is 76 × 78 mm with a 42 mm QR code and dashed cut guides. Batch printing fits six labels on an A4 sheet. Print at actual size (100%) and scan a proof before bulk printing. This layout is shared by the browser, Android and iOS; it is not aligned to a specific adhesive-sheet brand.
 - In Warehouse or Inventory, select item checkboxes and choose Labels to print a batch.
 - Keep the blank margin around QR codes and attach them to a flat tag or smooth area. Avoid folds and tape glare over the symbol.
 - Use your server's stable reachable address before printing. Retain the same hostname if the server moves.
@@ -100,6 +100,19 @@ Mending and cleaning do not create replacement items. The original QR stays atta
 - Keep the donor's preference. Marketing or updates require explicit consent and a matching email/phone contact detail. Contact details alone do not give permission. Anonymous donations have no donor identity or contact permission.
 
 Each successful transition stores a timestamp and the signed-in staff name. Edits use version checks: a stale action is rejected so staff do not accidentally overwrite another worker's changes.
+
+## Delete a dummy or mistaken inventory record
+
+1. Open the item from Inventory or Warehouse and select **Delete item (admin)**.
+2. Review its name and reference. If it has a recorded sale, that sale will also be removed and the totals will change.
+3. Enter the reason, type the exact item reference, and enter the separate admin deletion password.
+4. Tick the permanent-deletion confirmation, then select **Permanently delete item**.
+
+Only a signed-in staff member who supplies the correct admin password can delete an item. The server checks it for every deletion; there is no persistent admin unlock. The password is masked and cleared after submission. Five incorrect attempts temporarily block further attempts for ten minutes.
+
+Deletion removes the live inventory record, its attached database photos and any linked sale. The original bag, donor and other items remain. Audit snapshots retain the item and sale details, reason and staff identity, and the bag's activity records the deletion. The deleted QR no longer resolves. Deletion cannot be undone inside the app; use an approved database backup if recovery is required.
+
+If the deletion action is absent, the administrator must configure it on the server using `scripts/Set-AdminDeletionPassword.ps1`. Do not put the admin password in printed guides, source code, screenshots or GitHub.
 
 ## Correct records and review donor impact
 
