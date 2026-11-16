@@ -219,6 +219,8 @@ class ItemInput(BaseModel):
     def category_fields(self):
         if not self.item_type.strip():
             raise ValueError('Choose an item type.')
+        if self.item_type == 'toy' and self.category != 'Dispose':
+            raise ValueError('Toys are not accepted for donation, resale or service.')
         if self.category == 'Re-sale':
             if self.item_type not in ['clothing', 'book', 'ornament', 'jewellery']:
                 raise ValueError('Only clothes, books, ornaments and jewellery can be sorted for resale.')

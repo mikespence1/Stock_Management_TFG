@@ -3,6 +3,27 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { App } from './main';
 
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+
+test('favoured causes use the current causes list and save multiple dropdown selections',async()=>{
+ const {data,fetchMock}=setup();
+ data.causes.push({id:'cause-2',name:'Newly Created Cause'});
+ render(<App/>);
+ await screen.findByRole('button',{name:/Being sorted/});
+ fireEvent.click(screen.getAllByRole('button',{name:'Donations'})[0]);
+ fireEvent.click(screen.getByRole('button',{name:'Receive donation'}));
+ const form=await screen.findByRole('dialog',{name:'Receive a donation'});
+ const causes=within(form).getByRole('combobox',{name:'Favoured causes (optional)'});
+ expect(within(causes).getByRole('option',{name:'Newly Created Cause'})).toBeTruthy();
+ fireEvent.change(causes,{target:{value:'cause-1'}});
+ fireEvent.change(causes,{target:{value:'cause-2'}});
+ fireEvent.click(within(form).getByRole('button',{name:'Remove Community Fund'}));
+ expect(within(causes).getByRole('option',{name:'Community Fund'})).toBeTruthy();
+ fireEvent.change(within(form).getByLabelText('Donor name *'),{target:{value:'Test Donor'}});
+ fireEvent.click(within(form).getByRole('button',{name:'Save & create bag label'}));
+ await waitFor(()=>expect(fetchMock.mock.calls.some(([url])=>url==='/api/donations')).toBe(true));
+ const call=fetchMock.mock.calls.find(([url])=>url==='/api/donations')!;
+ expect(JSON.parse(call[1].body).donor.cause_ids).toEqual(['cause-2']);
+});
 function setup(){
  const data={staff:{name:'Test Staff',email:'staff@example.com'},database:'postgresql',donors:[{id:'donor-1',name:'Original Donor'}],customers:[],items:[] as any[],sales:[] as any[],causes:[{id:'cause-1',name:'Community Fund'}],events:[],donations:[{id:'bag-1',reference:'BAG-ORIGINAL',donor_id:'donor-1',status:'sorting',created_at:'2026-11-14T00:00:00Z',location:'Warehouse'},{id:'bag-2',reference:'BAG-SECOND',donor_id:'donor-1',status:'in_transit',created_at:'2026-11-14T01:00:00Z',location:'Van'}]};
  const fetchMock=vi.fn(async(input:any,options:any)=>{
@@ -17,6 +38,7 @@ function setup(){
 test('the top sorting cards open bags and sorting defaults to clothes with the original bag locked',async()=>{
  setup();render(<App/>);
  fireEvent.click(await screen.findByRole('button',{name:/Being sorted/}));
+ expect(screen.queryByRole('button',{name:/On the way/})).toBeNull();
  const picker=await screen.findByRole('dialog',{name:'Choose a donation bag'});
  expect(within(picker).getByText('BAG-ORIGINAL')).toBeTruthy();
  fireEvent.click(within(picker).getByRole('button',{name:/Open manually/}));
@@ -31,15 +53,16 @@ test('the top sorting cards open bags and sorting defaults to clothes with the o
  expect(within(form).getByText(/Original Donor/)).toBeTruthy();
  expect(within(form).getByRole('button',{name:'Take photos'})).toBeTruthy();
  fireEvent.click(within(form).getByRole('button',{name:'Donate'}));
- expect(within(type).getByRole('option',{name:'Toys'})).toBeTruthy();
- fireEvent.change(type,{target:{value:'toy'}});
+ expect(within(type).queryByRole('option',{name:'Toys'})).toBeNull();
+ fireEvent.change(type,{target:{value:'homeware'}});
  fireEvent.click(within(form).getByRole('button',{name:'Re-sale'}));
  expect(type.value).toBe('clothing');
 });
 
 test('scanning the selected incoming bag receives it and selects its sorting workspace',async()=>{
  const {fetchMock}=setup();render(<App/>);
- fireEvent.click(await screen.findByRole('button',{name:/On the way/}));
+ fireEvent.click(await screen.findByRole('button',{name:/Bags to process/}));
+ fireEvent.change(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('combobox',{name:'Bag stage'}),{target:{value:'in_transit'}});
  fireEvent.click(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('button',{name:'Scan this bag'}));
  const scanner=await screen.findByRole('dialog',{name:'Scan a bag or item'});
  fireEvent.change(within(scanner).getByLabelText('Bag / item reference or QR link'),{target:{value:'BAG-SECOND'}});
@@ -51,7 +74,8 @@ test('scanning the selected incoming bag receives it and selects its sorting wor
 
 test('scanning the wrong bag is rejected before any processing transition',async()=>{
  const {fetchMock}=setup();render(<App/>);
- fireEvent.click(await screen.findByRole('button',{name:/On the way/}));
+ fireEvent.click(await screen.findByRole('button',{name:/Bags to process/}));
+ fireEvent.change(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('combobox',{name:'Bag stage'}),{target:{value:'in_transit'}});
  fireEvent.click(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('button',{name:'Scan this bag'}));
  const scanner=await screen.findByRole('dialog',{name:'Scan a bag or item'});
  fireEvent.change(within(scanner).getByLabelText('Bag / item reference or QR link'),{target:{value:'WRONG'}});
@@ -66,10 +90,12 @@ test('Android native QR scanning selects the bag and native printing uses its ex
  const scanQr=vi.fn((requestId:string)=>queueMicrotask(()=>window.dispatchEvent(new CustomEvent('givingflow:qr',{detail:{requestId,value:'BAG-SECOND'}}))));
  vi.stubGlobal('GivingFlowAndroid',{scanQr,takePhoto:vi.fn(),printLabels});
  render(<App/>);
- fireEvent.click(await screen.findByRole('button',{name:/On the way/}));
+ fireEvent.click(await screen.findByRole('button',{name:/Bags to process/}));
+ fireEvent.change(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('combobox',{name:'Bag stage'}),{target:{value:'in_transit'}});
  fireEvent.click(within(await screen.findByRole('dialog',{name:'Choose a donation bag'})).getByRole('button',{name:'Scan this bag'}));
  fireEvent.click(within(await screen.findByRole('dialog',{name:'Scan a bag or item'})).getByRole('button',{name:/Open camera scanner/}));
  const bag=await screen.findByRole('dialog',{name:'BAG-SECOND'});
+ expect(within(bag).queryByRole('button',{name:'Send to warehouse'})).toBeNull();
  expect(scanQr).toHaveBeenCalled();
  fireEvent.click(within(bag).getByRole('button',{name:'Print QR label'}));
  expect(printLabels).toHaveBeenCalledWith('bag-2');

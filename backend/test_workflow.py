@@ -90,6 +90,8 @@ def test_anonymity_and_contact_validation(client):
 def test_bag_lifecycle_and_qr(client):
     bag = new_bag(client)
     assert create_item(client, bag).status_code == 409
+    assert bag['status'] == 'received'
+    assert client.post(f'/api/donations/{bag["id"]}/action',json={'action':'receive','version':bag['version']}).status_code == 409
     bag = bag_action(client, bag, 'dispatch')
     bag = bag_action(client, bag, 'receive')
     assert client.post(f'/api/donations/{bag["id"]}/action',json={'action':'finish','version':bag['version']}).status_code == 422
@@ -140,7 +142,7 @@ def test_broader_resale_types(client,item_type):
     assert response.status_code==201,response.text
     assert response.json()['item_type']==item_type
 
-@pytest.mark.parametrize('item_type',['toy','shoes','hat','homeware','bag','other'])
+@pytest.mark.parametrize('item_type',['shoes','hat','homeware','bag','other'])
 def test_restricted_types_cannot_be_resold_but_can_follow_other_routes(client,item_type):
     bag=sorting_bag(client)
     cause=bootstrap(client)['causes'][0]['id']
@@ -148,6 +150,29 @@ def test_restricted_types_cannot_be_resold_but_can_follow_other_routes(client,it
     assert response.status_code==422
     for category in ['Donate','Mend','Clean','Dispose']:
         assert create_item(client,bag,category,item_type=item_type).status_code==201
+
+@pytest.mark.parametrize('category',['Re-sale','Donate','Mend','Clean'])
+def test_toys_are_not_accepted(client,category):
+    bag=sorting_bag(client)
+    response=create_item(client,bag,category,item_type='toy')
+    assert response.status_code==422
+    assert 'Toys are not accepted' in response.text
+
+def test_demo_seed_replaces_old_toys_without_changing_real_items(client):
+    from backend.seed import seed
+    assert not any(i['item_type']=='toy' for i in bootstrap(client)['items'])
+    bag=sorting_bag(client)
+    with module.SessionLocal() as db:
+        demo=module.Item(donation_id=bag['id'],category='Donate',item_type='toy',title='Wooden toy',status='awaiting_donation',details={'notes':'Fictional demo item'})
+        real=module.Item(donation_id=bag['id'],category='Dispose',item_type='toy',title='Wooden toy',status='awaiting_disposal',details={'notes':'Staff record'})
+        db.add_all([demo,real]);db.commit()
+        demo_id,reference,real_id=demo.id,demo.reference,real.id
+        seed(db)
+        assert demo.title=='Ceramic vase' and demo.item_type=='homeware'
+        assert demo.id==demo_id and demo.reference==reference and demo.donation_id==bag['id']
+        assert real.title=='Wooden toy' and real.item_type=='toy' and real.id==real_id
+        seed(db)
+        assert demo.title=='Ceramic vase'
 
 def test_old_prohibited_resale_stock_is_rerouted_without_losing_bag_identity(client):
     bag=sorting_bag(client)
@@ -158,7 +183,7 @@ def test_old_prohibited_resale_stock_is_rerouted_without_losing_bag_identity(cli
     item=next(i for i in bootstrap(client)['items'] if i['id']==key)
     assert item['status']=='awaiting_sort' and not item['listed_online']
     assert item['reference']==reference and item['donation_id']==bag['id']
-    response=client.put(f'/api/items/{key}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Donate','item_type':'toy','destination':'Community centre'})
+    response=client.put(f'/api/items/{key}/classify',params={'version':item['version']},json={'donation_id':bag['id'],'category':'Dispose','item_type':'toy','disposal_method':'Approved waste collection'})
     assert response.status_code==200,response.text
     assert response.json()['id']==key
 

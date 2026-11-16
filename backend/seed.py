@@ -9,6 +9,13 @@ def seed(db):
         db.add(Staff(email=os.getenv('STAFF_EMAIL', 'staff@givingflow.local').lower(), name='Alex Morgan', password=password_hash(os.getenv('STAFF_PASSWORD', 'GivingFlow123!'))))
         db.commit()
     if db.scalar(select(Donation)):
+        # Correct only untouched fictional examples from earlier demo releases.
+        # Keep their IDs, QR labels, bag links and history intact.
+        for item in db.scalars(select(Item).where(Item.item_type == 'toy', Item.title == 'Wooden toy')):
+            if item.details.get('notes') == 'Fictional demo item':
+                item.item_type = 'homeware'
+                item.title = 'Ceramic vase'
+        db.commit()
         return
     causes = [Cause(name=n, description=d) for n, d in [('Community Food Fund', 'Meals and essentials for local families'), ('Bright Futures', 'School supplies and youth opportunities'), ('Safe Haven', 'Practical help for people without a home'), ('Care Together', 'Support for older people'), ('Green Tomorrow', 'Repair, reuse and environmental projects')]]
     db.add_all(causes)
@@ -41,8 +48,8 @@ def seed(db):
     books = [('The Secret Garden', 'Frances Hodgson Burnett'), ('Pride and Prejudice', 'Jane Austen'), ('A Room of One’s Own', 'Virginia Woolf'), ('The Wind in the Willows', 'Kenneth Grahame'), ('Little Women', 'Louisa May Alcott'), ('The Railway Children', 'E. Nesbit'), ('Treasure Island', 'Robert Louis Stevenson'), ('Emma', 'Jane Austen'), ('Jane Eyre', 'Charlotte Brontë'), ('The Jungle Book', 'Rudyard Kipling')]
     for group, category in enumerate(['Re-sale', 'Re-sale', 'Donate', 'Mend', 'Clean', 'Dispose']):
         for i in range(10):
-            item_type = 'clothing' if group == 0 else 'book' if group == 1 else ['clothing', 'homeware', 'shoes', 'toy', 'bag'][i % 5]
-            title = clothing[i] if group == 0 else books[i][0] if group == 1 else f'{["Winter coat", "Ceramic bowl", "Walking shoes", "Wooden toy", "Canvas bag"][i % 5]}'
+            item_type = 'clothing' if group == 0 else 'book' if group == 1 else ['clothing', 'homeware', 'shoes', 'homeware', 'bag'][i % 5]
+            title = clothing[i] if group == 0 else books[i][0] if group == 1 else f'{["Winter coat", "Ceramic bowl", "Walking shoes", "Ceramic vase", "Canvas bag"][i % 5]}'
             status = {'Re-sale': 'available', 'Donate': 'awaiting_donation', 'Mend': 'awaiting_service', 'Clean': 'awaiting_service', 'Dispose': 'awaiting_disposal'}[category]
             if category in ['Mend', 'Clean'] and i < 3:
                 status = 'in_service'
